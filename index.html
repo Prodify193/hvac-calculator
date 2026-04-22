@@ -1,1707 +1,365 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HVAC Duct Material Calculator — Alkanz</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --bg:        #08090c;
-  --surface:   #101218;
-  --surface2:  #14171f;
-  --surface3:  #1a1e28;
-  --border:    #252a36;
-  --border2:   #30384a;
-  --gold:      #c8922a;
-  --gold2:     #e8aa3a;
-  --gold3:     #f5c85a;
-  --goldbg:    rgba(200,146,42,0.08);
-  --blue:      #3d8ef0;
-  --teal:      #2fb8ac;
-  --red:       #e85555;
-  --green:     #3bbf6a;
-  --amber:     #f0a040;
-  --text:      #dde4f0;
-  --text2:     #7a8499;
-  --text3:     #4a5268;
-  --shadow:    0 2px 8px rgba(0,0,0,.5), 0 8px 32px rgba(0,0,0,.4);
-  --r:         10px;
-}
-
-body {
-  font-family: 'DM Sans', system-ui, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  font-size: 13px;
-  line-height: 1.5;
-  background-image: 
-    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(200,146,42,0.06) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(61,142,240,0.04) 0%, transparent 60%);
-}
-
-/* ── TOPBAR ── */
-.topbar {
-  background: rgba(16,18,24,0.95);
-  border-bottom: 1px solid var(--border);
-  height: 62px;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 32px;
-  position: sticky; top: 0; z-index: 200;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-.tb-left { display: flex; align-items: center; gap: 16px; }
-.tb-logo {
-  width: 40px; height: 40px;
-  background: linear-gradient(135deg, var(--gold) 0%, var(--gold3) 100%);
-  border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px; flex-shrink: 0;
-  box-shadow: 0 0 20px rgba(200,146,42,0.3);
-}
-.tb-brand { display: flex; flex-direction: column; }
-.tb-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; color: var(--text); letter-spacing: .3px; }
-.tb-sub   { font-size: 10.5px; color: var(--text3); margin-top: 1px; letter-spacing: .5px; text-transform: uppercase; }
-.tb-divider { width: 1px; height: 28px; background: var(--border); }
-.alkanz-badge {
-  display: flex; align-items: center; gap: 8px;
-  padding: 5px 14px;
-  background: var(--goldbg);
-  border: 1px solid rgba(200,146,42,0.25);
-  border-radius: 20px;
-}
-.alkanz-badge span { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; color: var(--gold2); letter-spacing: 1.5px; text-transform: uppercase; }
-.alkanz-cross {
-  width: 16px; height: 16px; position: relative; flex-shrink: 0;
-}
-.alkanz-cross::before, .alkanz-cross::after {
-  content: ''; position: absolute;
-  background: var(--gold2); border-radius: 1px;
-}
-.alkanz-cross::before { width: 3px; height: 16px; left: 6.5px; top: 0; }
-.alkanz-cross::after  { width: 16px; height: 3px; left: 0; top: 6.5px; }
-
-.tb-right { display: flex; align-items: center; gap: 20px; }
-.tb-clock { font-family: 'DM Mono', monospace; font-size: 14px; color: var(--gold2); letter-spacing: .5px; text-align: right; }
-.tb-date  { font-size: 10.5px; color: var(--text3); text-align: right; margin-top: 2px; letter-spacing: .3px; }
-
-/* ── STATUS BAR ── */
-.statusbar {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 10px 32px;
-  display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
-}
-.spill {
-  display: flex; align-items: center; gap: 8px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  padding: 5px 14px;
-  font-size: 11.5px; font-weight: 500;
-  transition: border-color .15s;
-}
-.spill:hover { border-color: var(--border2); }
-.spill-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.spill-lbl { color: var(--text3); }
-.spill-val { font-family: 'DM Mono', monospace; font-weight: 500; color: var(--text); margin-left: 2px; }
-.spill-unit { color: var(--text3); font-size: 10px; margin-left: 1px; }
-
-/* ── LAYOUT ── */
-.page { max-width: 1600px; margin: 0 auto; padding: 22px 28px 60px; }
-.layout {
-  display: grid;
-  grid-template-columns: 420px 1fr;
-  gap: 20px; align-items: start;
-}
-@media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } }
-
-/* ── PANEL ── */
-.panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  overflow: hidden;
-  box-shadow: var(--shadow);
-  transition: border-color .2s;
-}
-.panel:hover { border-color: var(--border2); }
-.panel + .panel { margin-top: 16px; }
-
-.panel-head {
-  background: var(--surface2);
-  border-bottom: 1px solid var(--border);
-  padding: 11px 20px;
-  display: flex; align-items: center; justify-content: space-between;
-}
-.ph-left { display: flex; align-items: center; gap: 11px; }
-.ph-icon {
-  width: 28px; height: 28px;
-  background: var(--surface3);
-  border: 1px solid var(--border2);
-  border-radius: 7px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 13px;
-}
-.panel-head h3 {
-  font-family: 'Syne', sans-serif;
-  font-size: 11px; font-weight: 700;
-  letter-spacing: 1.2px; text-transform: uppercase; color: var(--text2);
-}
-.panel-body { padding: 20px; }
-
-/* ── FORM ── */
-.field { margin-bottom: 13px; }
-.field:last-child { margin-bottom: 0; }
-.field label {
-  display: block; font-size: 10px; font-weight: 600;
-  letter-spacing: .9px; text-transform: uppercase;
-  color: var(--text3); margin-bottom: 5px;
-}
-.field input, .field select {
-  width: 100%; padding: 9px 12px;
-  border-radius: 7px; font-size: 13px;
-  font-family: 'DM Sans', sans-serif;
-  transition: border-color .15s, box-shadow .15s;
-  appearance: none; -webkit-appearance: none;
-}
-.field input:focus, .field select:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(200,146,42,0.18);
-  border-color: var(--gold) !important;
-}
-.inp-m {
-  background: #fffdf5; border: 1.5px solid #d4a820; color: #1a1005;
-}
-.inp-m::placeholder { color: #c0a060; }
-.inp-a {
-  background: #f0faf3; border: 1.5px solid rgba(59,191,106,.4); color: #1a5c35;
-  font-family: 'DM Mono', monospace !important;
-  font-weight: 500 !important; font-size: 13px !important;
-  pointer-events: none;
-}
-.r2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
-/* ── LEGEND ── */
-.legend {
-  display: flex; gap: 20px; margin-bottom: 15px;
-  padding: 8px 13px;
-  background: var(--surface3);
-  border: 1px solid var(--border);
-  border-radius: 7px;
-}
-.li { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--text3); }
-.ldot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
-
-/* ── SECTION DIVIDER ── */
-.sec {
-  font-size: 9.5px; font-weight: 700;
-  letter-spacing: 1.8px; text-transform: uppercase;
-  color: var(--text3); padding: 6px 0 9px;
-  border-bottom: 1px solid var(--border);
-  margin: 18px 0 14px;
-  display: flex; align-items: center; gap: 9px;
-}
-.sec::before {
-  content: '';
-  width: 3px; height: 13px;
-  background: linear-gradient(to bottom, var(--gold3), var(--gold));
-  border-radius: 2px;
-}
-
-/* ── RESULT TILES ── */
-.tiles { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 9px; }
-.tile {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 8px; padding: 12px 13px;
-  transition: all .15s;
-}
-.tile:hover { border-color: var(--border2); transform: translateY(-1px); }
-.t-a { border-top: 2px solid var(--gold); }
-.t-b { border-top: 2px solid var(--blue); }
-.t-g { border-top: 2px solid var(--green); }
-.tile-lbl { font-size: 9px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text3); margin-bottom: 5px; }
-.tile-val { font-family: 'DM Mono', monospace; font-size: 23px; font-weight: 500; color: var(--text); line-height: 1; }
-.tile-unit { font-size: 10px; color: var(--text3); font-family: 'DM Sans', sans-serif; margin-top: 3px; }
-
-/* ── ERROR ── */
-.errmsg {
-  display: none;
-  background: rgba(232,85,85,.1); border: 1px solid rgba(232,85,85,.35);
-  color: #ff9090; border-radius: 7px;
-  padding: 9px 14px; font-size: 12px; margin-top: 13px;
-}
-
-/* ── BUTTONS ── */
-.btn-row { display: flex; gap: 10px; margin-top: 15px; }
-.btn {
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 10px 18px; border: none; border-radius: 7px;
-  font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
-  letter-spacing: .2px; cursor: pointer; transition: all .15s; white-space: nowrap;
-}
-.btn:active { transform: scale(.97); }
-.btn-primary { background: linear-gradient(135deg, var(--gold) 0%, var(--gold3) 100%); color: #1a0e00; flex: 1; justify-content: center; box-shadow: 0 2px 12px rgba(200,146,42,0.25); }
-.btn-primary:hover { box-shadow: 0 4px 20px rgba(200,146,42,0.4); filter: brightness(1.05); }
-.btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border2); }
-.btn-ghost:hover { background: var(--surface3); color: var(--text); }
-.btn-blue { background: rgba(61,142,240,.1); color: var(--blue); border: 1px solid rgba(61,142,240,.25); }
-.btn-blue:hover { background: rgba(61,142,240,.2); }
-.btn-teal { background: rgba(47,184,172,.1); color: var(--teal); border: 1px solid rgba(47,184,172,.25); }
-.btn-teal:hover { background: rgba(47,184,172,.2); }
-.btn-red { background: rgba(232,85,85,.1); color: var(--red); border: 1px solid rgba(232,85,85,.25); }
-.btn-red:hover { background: rgba(232,85,85,.2); }
-.btn-gold { background: var(--goldbg); color: var(--gold2); border: 1px solid rgba(200,146,42,.35); }
-.btn-gold:hover { background: rgba(200,146,42,.14); border-color: rgba(200,146,42,.55); }
-
-/* ── KPI ROW ── */
-.kpi-row {
-  display: grid; grid-template-columns: repeat(5,1fr); gap: 11px; margin-bottom: 18px;
-}
-@media (max-width: 960px) { .kpi-row { grid-template-columns: repeat(3,1fr); } }
-.kpi {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 15px 17px;
-  transition: all .15s;
-}
-.kpi:hover { border-color: var(--border2); transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,.3); }
-.kpi-lbl { font-size: 9.5px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text3); margin-bottom: 7px; }
-.kpi-val { font-family: 'DM Mono', monospace; font-size: 28px; font-weight: 500; line-height: 1; }
-.kpi-unit { font-size: 10.5px; color: var(--text3); margin-top: 4px; }
-.cv-a { color: var(--gold2); }
-.cv-b { color: var(--blue); }
-.cv-g { color: var(--green); }
-.cv-o { color: var(--amber); }
-.cv-p { color: var(--teal); }
-
-/* ── TABLE ── */
-.tbl-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 1100px; }
-
-thead th {
-  background: var(--surface2); padding: 10px 10px;
-  font-size: 9.5px; font-weight: 700; letter-spacing: 1.2px;
-  text-transform: uppercase; color: var(--text3);
-  border-bottom: 1px solid var(--border2);
-  text-align: center; white-space: nowrap;
-}
-thead th:nth-child(2) { text-align: left; }
-
-tbody tr { border-bottom: 1px solid rgba(37,42,54,.9); transition: background .1s; }
-tbody tr:nth-child(even) { background: rgba(20,23,31,.5); }
-tbody tr:hover { background: var(--surface3); }
-
-tbody td { padding: 10px 10px; text-align: center; color: var(--text2); vertical-align: middle; }
-tbody td:nth-child(1) { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text3); }
-tbody td:nth-child(2) { text-align: left; }
-
-.tag-name { font-weight: 600; color: var(--text); font-size: 12.5px; }
-.tag-ts   { font-size: 10px; color: var(--text3); margin-top: 2px; }
-
-.nc  { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 400; }
-.nch { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; color: var(--gold2); }
-
-/* ── BADGES ── */
-.badge {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 3px 9px; border-radius: 20px;
-  font-size: 9.5px; font-weight: 600; letter-spacing: .5px;
-  text-transform: uppercase; white-space: nowrap;
-}
-.badge::before { content:''; width:5px; height:5px; border-radius:50%; flex-shrink:0; }
-.b-s  { background:rgba(61,142,240,.12); color:#79b8ff; border:1px solid rgba(61,142,240,.22); }
-.b-s::before  { background:var(--blue); }
-.b-r  { background:rgba(160,110,240,.12); color:#c8a2f7; border:1px solid rgba(160,110,240,.22); }
-.b-r::before  { background:#a06ef0; }
-.b-e  { background:rgba(232,85,85,.12); color:#ff9090; border:1px solid rgba(232,85,85,.22); }
-.b-e::before  { background:var(--red); }
-.b-m  { background:rgba(59,191,106,.12); color:#7ee787; border:1px solid rgba(59,191,106,.22); }
-.b-m::before  { background:var(--green); }
-
-/* ── TFOOT ── */
-tfoot tr { background: rgba(8,9,12,.9) !important; }
-tfoot td {
-  padding: 11px 10px;
-  font-family: 'DM Mono', monospace;
-  font-size: 12px; font-weight: 500; color: var(--gold2);
-  border-top: 1px solid var(--gold); text-align: center;
-}
-tfoot td:nth-child(2) { text-align: left; }
-tfoot td.tot-lbl {
-  font-family: 'Syne', sans-serif;
-  font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase;
-  color: var(--text3); text-align: right;
-}
-
-/* ── DEL BUTTON ── */
-.del-btn {
-  background: none; border: none; cursor: pointer;
-  padding: 4px 6px; border-radius: 5px;
-  color: var(--text3); font-size: 12px; transition: all .12s; line-height: 1;
-}
-.del-btn:hover { background: rgba(232,85,85,.15); color: var(--red); }
-
-/* ── EDIT BUTTON ── */
-.edit-btn {
-  background: none; border: none; cursor: pointer;
-  padding: 4px 6px; border-radius: 5px;
-  color: var(--text3); font-size: 12px; transition: all .12s; line-height: 1;
-}
-.edit-btn:hover { background: rgba(200,146,42,.15); color: var(--gold2); }
-
-/* ── EMPTY ── */
-.empty { text-align: center; padding: 56px 20px; color: var(--text3); }
-.empty-icon { font-size: 42px; margin-bottom: 14px; opacity: .3; }
-.empty p { font-size: 13px; }
-
-/* ── TOOLBAR ── */
-.toolbar {
-  padding: 10px 18px;
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
-  background: var(--surface2); gap: 10px; flex-wrap: wrap;
-}
-.toolbar-note { font-size: 11px; color: var(--text3); }
-.toolbar-btns { display: flex; gap: 8px; flex-wrap: wrap; }
-
-/* ── NOTES AREA ── */
-.notes-area {
-  width: 100%; padding: 10px 12px;
-  border-radius: 7px; font-size: 12.5px;
-  font-family: 'DM Sans', sans-serif;
-  background: var(--surface3); border: 1.5px solid var(--border2);
-  color: var(--text); resize: vertical; min-height: 70px;
-  transition: border-color .15s, box-shadow .15s;
-}
-.notes-area:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(200,146,42,.15); }
-.notes-area::placeholder { color: var(--text3); }
-
-/* ── SUMMARY CARDS ── */
-.summary-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px;
-}
-.sum-card {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 14px 16px;
-}
-.sum-card-title {
-  font-family: 'Syne', sans-serif;
-  font-size: 9.5px; font-weight: 700; letter-spacing: 1.5px;
-  text-transform: uppercase; color: var(--text3); margin-bottom: 12px;
-  display: flex; align-items: center; gap: 7px;
-}
-.sum-card-title::before {
-  content: ''; width: 4px; height: 4px; border-radius: 50%;
-  background: var(--gold);
-}
-.sum-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid rgba(37,42,54,.6); }
-.sum-row:last-child { border-bottom: none; }
-.sum-key { font-size: 11.5px; color: var(--text2); }
-.sum-val { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); font-weight: 500; }
-
-/* ── SPINNER ── */
-.spinner {
-  display: none; position: fixed; inset: 0; z-index: 999;
-  background: rgba(8,9,12,.7); backdrop-filter: blur(4px);
-  align-items: center; justify-content: center; flex-direction: column; gap: 16px;
-}
-.spinner.active { display: flex; }
-.spin-ring {
-  width: 48px; height: 48px; border-radius: 50%;
-  border: 3px solid var(--border2);
-  border-top-color: var(--gold2);
-  animation: spin 0.8s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.spin-text { font-size: 13px; color: var(--text2); letter-spacing: .5px; }
-
-/* ── TOAST ── */
-.toast {
-  position: fixed; bottom: 28px; right: 28px;
-  background: var(--surface2); border: 1px solid var(--border2);
-  border-radius: 8px; padding: 12px 18px;
-  font-size: 13px; color: var(--text);
-  box-shadow: 0 8px 32px rgba(0,0,0,.5);
-  transform: translateY(20px) scale(.96); opacity: 0;
-  transition: all .25s cubic-bezier(.34,1.56,.64,1);
-  pointer-events: none; z-index: 500;
-  display: flex; align-items: center; gap: 10px;
-}
-.toast.show { transform: translateY(0) scale(1); opacity: 1; }
-.toast-icon { font-size: 16px; }
-
-/* ── HIGHLIGHT CHANGES ── */
-@keyframes rowFlash {
-  0% { background: rgba(200,146,42,.18); }
-  100% { background: transparent; }
-}
-.row-new { animation: rowFlash 1.2s ease-out; }
-
-/* ── SEARCH BAR ── */
-.search-wrap { position: relative; margin-bottom: 4px; }
-.search-input {
-  width: 200px; padding: 6px 12px 6px 32px;
-  background: var(--surface3); border: 1px solid var(--border2);
-  border-radius: 6px; font-size: 12px; color: var(--text);
-  font-family: 'DM Sans', sans-serif;
-  transition: border-color .15s;
-}
-.search-input:focus { outline: none; border-color: var(--gold); }
-.search-icon {
-  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
-  color: var(--text3); font-size: 12px; pointer-events: none;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HVAC Duct Material Calculator</title>
+    <style>
+        :root {
+            --primary: #2563eb; --primary-hover: #1d4ed8; --bg: #f8fafc;
+            --card-bg: #ffffff; --text: #1e293b; --muted: #64748b;
+            --border: #e2e8f0; --input-manual: #fff9c4; --input-auto: #dcfce7; 
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 30px; }
+        h1 { color: var(--primary); margin-bottom: 5px; }
+        p.subtitle { color: var(--muted); margin-top: 0; }
+        .calculator-card { background: var(--card-bg); padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 30px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px; }
+        input, select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 16px; box-sizing: border-box; }
+        input:focus, select:focus { outline: none; border-color: var(--primary); }
+        .manual-input { background-color: var(--input-manual); }
+        .auto-input { background-color: var(--input-auto); font-weight: bold; color: #166534; pointer-events: none; }
+        button { background-color: var(--primary); color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 6px; cursor: pointer; font-weight: 600; margin-right: 10px; margin-top: 10px; }
+        button:hover { background-color: var(--primary-hover); }
+        .btn-secondary { background-color: #64748b; } .btn-secondary:hover { background-color: #475569; }
+        .btn-danger { background-color: #ef4444; } .btn-danger:hover { background-color: #dc2626; }
+        .log-section { background: var(--card-bg); padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+        th, td { padding: 12px; text-align: center; border-bottom: 1px solid var(--border); }
+        th { background-color: #f1f5f9; font-weight: 700; color: var(--muted); text-transform: uppercase; font-size: 12px; }
+        tfoot td { font-weight: 900; background-color: #eff6ff; color: var(--primary); border-top: 3px solid var(--primary); font-size: 15px; }
+        .alert { color: #dc2626; font-weight: bold; font-size: 14px; margin-top: 10px; display: none; }
+    </style>
 </head>
 <body>
 
-<!-- SPINNER -->
-<div class="spinner" id="spinner">
-  <div class="spin-ring"></div>
-  <div class="spin-text">Generating PDF Report…</div>
-</div>
+<div class="container">
+    <header>
+        <h1>HVAC Raw Material Estimator</h1>
+        <p class="subtitle">Calibrated from official Excel costing data (AK-JD0050 / AK-JD0053)</p>
+    </header>
 
-<!-- TOAST -->
-<div class="toast" id="toast">
-  <span class="toast-icon" id="toastIcon">✅</span>
-  <span id="toastMsg">Done!</span>
-</div>
+    <div class="calculator-card">
+        <div class="grid-2">
+            <div>
+                <h3>Project & Area Info</h3>
+                <div class="form-group">
+                    <label>Taglist Description</label>
+                    <input type="text" id="tagDesc" class="manual-input" placeholder="e.g. AK-JD0053">
+                </div>
+                <div class="form-group">
+                    <label>Total Duct Square Meters (Sqm)</label>
+                    <input type="number" id="sqm" class="manual-input" step="0.01" min="0" oninput="calculate()">
+                </div>
+                <div class="form-group">
+                    <label>Panel Waste Factor (Default 1.2 = 20% waste)</label>
+                    <input type="number" id="wasteFactor" class="manual-input" step="0.01" min="1" value="1.20" oninput="calculate()">
+                </div>
+                
+                <h3 style="margin-top: 25px;">Hardware Inputs (From Flange List)</h3>
+                <div class="form-group">
+                    <label>Alu JT / Joint Profile (m)</label>
+                    <input type="number" id="jointProf" class="manual-input" min="0" oninput="calculate()">
+                </div>
+                <div class="form-group">
+                    <label>Alu H Profile (m)</label>
+                    <input type="number" id="hProf" class="manual-input" min="0" oninput="calculate()">
+                </div>
+                <div class="form-group">
+                    <label>Alu U Profile (m)</label>
+                    <input type="number" id="uProf" class="manual-input" min="0" oninput="calculate()">
+                </div>
+                <div class="form-group">
+                    <label>Alu F Profile (m)</label>
+                    <input type="number" id="fProf" class="manual-input" min="0" oninput="calculate()">
+                </div>
+                <div class="form-group">
+                    <label>GI Corner Quantity (Pcs)</label>
+                    <input type="number" id="giCorner" class="manual-input" min="0" oninput="calculate()">
+                </div>
+            </div>
 
-<!-- TOPBAR -->
-<header class="topbar">
-  <div class="tb-left">
-    <div class="tb-logo">🌡</div>
-    <div class="tb-brand">
-      <div class="tb-title">HVAC Duct Material Calculator</div>
-      <div class="tb-sub">Calibrated · 52-Sheet Ref · 249.6 m²</div>
+            <div>
+                <h3>Auto-Calculated Quantities</h3>
+                <div class="form-group">
+                    <label>PH Sheet Required (Sqm)</label>
+                    <input type="text" id="phSheet" class="auto-input" readonly value="0">
+                </div>
+                <div class="form-group">
+                    <label>PVC Corner Quantity (Pcs)</label>
+                    <input type="text" id="pvcCorner" class="auto-input" readonly value="0">
+                </div>
+                <div class="form-group">
+                    <label>Sliding Channel (m)</label>
+                    <input type="text" id="slidingCh" class="auto-input" readonly value="0">
+                </div>
+
+                <h3 style="margin-top: 25px;">Adhesives & Sealants</h3>
+                <div class="form-group">
+                    <label>Normal Alu Tape (Rolls) - Ratio: 0.096</label>
+                    <input type="text" id="tapeQty" class="auto-input" readonly value="0">
+                </div>
+                <div class="form-group">
+                    <label>Duct Glue (Liters) - Ratio: 0.08</label>
+                    <input type="text" id="ductGlue" class="auto-input" readonly value="0">
+                </div>
+                <div class="form-group">
+                    <label>Profile Glue (Tubes) - Ratio: 0.01</label>
+                    <input type="text" id="profGlue" class="auto-input" readonly value="0">
+                </div>
+                <div class="form-group">
+                    <label>Silicone Sealant (Tubes) - Ratio: 0.32</label>
+                    <input type="text" id="siliconeQty" class="auto-input" readonly value="0">
+                </div>
+
+                <div id="errorMsg" class="alert">Please enter Tag Description and Sqm!</div>
+                <div style="margin-top: 30px;">
+                    <button onclick="addToLog()">+ Add to Log</button>
+                    <button onclick="clearForm()" class="btn-secondary">Clear Form</button>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="tb-divider"></div>
-    <div class="alkanz-badge">
-      <div class="alkanz-cross"></div>
-      <span>Alkanz</span>
-    </div>
-  </div>
-  <div class="tb-right">
-    <div>
-      <div class="tb-clock" id="clock">--:--:--</div>
-      <div class="tb-date" id="dateline">Loading...</div>
-    </div>
-  </div>
-</header>
 
-<!-- STATUS BAR -->
-<div class="statusbar">
-  <div class="spill">
-    <div class="spill-dot" style="background:var(--gold2)"></div>
-    <span class="spill-lbl">Tags</span>
-    <span class="spill-val" id="st-tags">0</span>
-  </div>
-  <div class="spill">
-    <div class="spill-dot" style="background:var(--blue)"></div>
-    <span class="spill-lbl">Total Area</span>
-    <span class="spill-val" id="st-sqm">0.00</span>
-    <span class="spill-unit">m²</span>
-  </div>
-  <div class="spill">
-    <div class="spill-dot" style="background:var(--amber)"></div>
-    <span class="spill-lbl">Tape</span>
-    <span class="spill-val" id="st-tape">0</span>
-    <span class="spill-unit">rolls</span>
-  </div>
-  <div class="spill">
-    <div class="spill-dot" style="background:var(--green)"></div>
-    <span class="spill-lbl">Silicone</span>
-    <span class="spill-val" id="st-silicone">0</span>
-    <span class="spill-unit">pcs</span>
-  </div>
-  <div class="spill">
-    <div class="spill-dot" style="background:var(--teal)"></div>
-    <span class="spill-lbl">Glue</span>
-    <span class="spill-val" id="st-glue">0.0</span>
-    <span class="spill-unit">L</span>
-  </div>
-  <div class="spill" style="margin-left:auto;">
-    <div class="spill-dot" style="background:var(--text3)"></div>
-    <span class="spill-lbl">Session</span>
-    <span class="spill-val" id="st-session">—</span>
-  </div>
-</div>
+    <div class="log-section">
+        <h2 style="margin-top:0;">Daily Calculation Log</h2>
+        <p>Keep track of all tags. The bottom row automatically sums your daily material requirements.</p>
+        
+        <button onclick="exportCSV()" class="btn-secondary">Export to Excel (CSV)</button>
+        <button onclick="clearLog()" class="btn-danger">Clear Log</button>
 
-<!-- PAGE -->
-<main class="page">
-  <div class="layout">
-
-    <!-- LEFT COLUMN -->
-    <div>
-
-      <!-- PROJECT INFO -->
-      <div class="panel">
-        <div class="panel-head">
-          <div class="ph-left"><div class="ph-icon">📁</div><h3>Project Information</h3></div>
-        </div>
-        <div class="panel-body">
-          <div class="r2">
-            <div class="field"><label>Project Name</label>
-              <input type="text" id="projName" class="inp-m" placeholder="e.g. KIZAD Block C"></div>
-            <div class="field"><label>Client / Employer</label>
-              <input type="text" id="client" class="inp-m" placeholder="Client name"></div>
-          </div>
-          <div class="r2">
-            <div class="field"><label>Prepared By</label>
-              <input type="text" id="prepBy" class="inp-m" placeholder="Engineer name"></div>
-            <div class="field"><label>Checked By</label>
-              <input type="text" id="checkedBy" class="inp-m" placeholder="Reviewer name"></div>
-          </div>
-          <div class="r2">
-            <div class="field"><label>Date</label>
-              <input type="date" id="projDate" class="inp-m"></div>
-            <div class="field"><label>Drawing / Sheet Ref</label>
-              <input type="text" id="sheetRef" class="inp-m" placeholder="e.g. M-101 Rev B"></div>
-          </div>
-          <div class="r2">
-            <div class="field"><label>Location / Zone</label>
-              <input type="text" id="location" class="inp-m" placeholder="e.g. Ground Floor Zone A"></div>
-            <div class="field"><label>Revision No.</label>
-              <input type="text" id="revNo" class="inp-m" placeholder="e.g. Rev 01"></div>
-          </div>
-          <div class="field"><label>Notes / Remarks</label>
-            <textarea class="notes-area" id="projNotes" placeholder="Optional site notes, conditions, or special instructions…"></textarea>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAG ENTRY -->
-      <div class="panel">
-        <div class="panel-head">
-          <div class="ph-left"><div class="ph-icon">⚙️</div><h3>Tag Entry</h3></div>
-          <span style="font-size:10px;color:var(--text3)" id="editingBadge"></span>
-        </div>
-        <div class="panel-body">
-
-          <div class="legend">
-            <div class="li"><div class="ldot" style="background:var(--gold)"></div>Manual Input</div>
-            <div class="li"><div class="ldot" style="background:var(--green)"></div>Auto-Calculated</div>
-          </div>
-
-          <div class="sec">Tag Details</div>
-          <div class="field">
-            <label>Taglist Description</label>
-            <input type="text" id="tagDesc" class="inp-m" placeholder="e.g. OD-386 Supply Main Duct">
-          </div>
-          <div class="r2">
-            <div class="field"><label>Category</label>
-              <select id="category" class="inp-m" onchange="calculate()">
-                <option value="Supply Duct">Cat B – Supply Duct</option>
-                <option value="Return Duct">Cat C – Return Duct</option>
-                <option value="Exhaust Duct">Cat D – Exhaust Duct</option>
-                <option value="Mouth Connection">Cat A – Mouth Connection</option>
-              </select>
-            </div>
-            <div class="field"><label>Total Area (m²)</label>
-              <input type="number" id="sqm" class="inp-m" step="0.01" min="0" oninput="calculate()" placeholder="0.00">
-            </div>
-          </div>
-
-          <div class="sec">Hardware Quantities</div>
-          <div class="r2">
-            <div class="field"><label>Joint Profile (m)</label>
-              <input type="number" id="jointProf" class="inp-m" min="0" oninput="calculate()" placeholder="0"></div>
-            <div class="field"><label>Chair Qty (pcs)</label>
-              <input type="number" id="chairQty" class="inp-m" min="0" placeholder="0"></div>
-          </div>
-          <div class="r2">
-            <div class="field"><label>F-Profile (m)</label>
-              <input type="number" id="fProf" class="inp-m" min="0" placeholder="0"></div>
-            <div class="field"><label>GI Corner (pcs)</label>
-              <input type="number" id="giCorner" class="inp-m" min="0" oninput="calculate()" placeholder="0"></div>
-          </div>
-
-          <div class="sec">Consumables — Auto Calculated</div>
-          <div class="tiles">
-            <div class="tile t-a">
-              <div class="tile-lbl">Sliding Ch.</div>
-              <div class="tile-val" id="r-sliding">0</div>
-              <div class="tile-unit">pcs</div>
-            </div>
-            <div class="tile t-a">
-              <div class="tile-lbl">PVC Corner</div>
-              <div class="tile-val" id="r-pvc">0</div>
-              <div class="tile-unit">pcs</div>
-            </div>
-            <div class="tile t-a">
-              <div class="tile-lbl">Bolts</div>
-              <div class="tile-val" id="r-bolts">0</div>
-              <div class="tile-unit">pcs</div>
-            </div>
-            <div class="tile t-b">
-              <div class="tile-lbl">Alum. Tape</div>
-              <div class="tile-val" id="r-tape">0</div>
-              <div class="tile-unit">60-yd rolls</div>
-            </div>
-            <div class="tile t-g">
-              <div class="tile-lbl">Glue</div>
-              <div class="tile-val" id="r-glue">0</div>
-              <div class="tile-unit">liters</div>
-            </div>
-            <div class="tile t-g">
-              <div class="tile-lbl">Silicone</div>
-              <div class="tile-val" id="r-silicone">0</div>
-              <div class="tile-unit">cartridges</div>
-            </div>
-          </div>
-
-          <div class="errmsg" id="errMsg">⚠ Tag description and a valid area (m²) are required.</div>
-
-          <div class="btn-row">
-            <button class="btn btn-primary" onclick="addToLog()" id="addBtn">
-              <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2Z"/></svg>
-              Add to Log
-            </button>
-            <button class="btn btn-ghost" onclick="clearForm()">
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"/></svg>
-              Clear
-            </button>
-          </div>
-        </div>
-      </div>
-
-    </div><!-- /left -->
-
-    <!-- RIGHT COLUMN -->
-    <div>
-
-      <!-- KPIs -->
-      <div class="kpi-row">
-        <div class="kpi">
-          <div class="kpi-lbl">Total Tags</div>
-          <div class="kpi-val cv-a" id="kpi-tags">0</div>
-          <div class="kpi-unit">Logged entries</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-lbl">Total Area</div>
-          <div class="kpi-val cv-b" id="kpi-sqm">0.00</div>
-          <div class="kpi-unit">Square meters</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-lbl">Alum. Tape</div>
-          <div class="kpi-val cv-o" id="kpi-tape">0</div>
-          <div class="kpi-unit">60-yd rolls</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-lbl">Silicone</div>
-          <div class="kpi-val cv-g" id="kpi-silicone">0</div>
-          <div class="kpi-unit">Cartridges</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-lbl">Glue</div>
-          <div class="kpi-val cv-p" id="kpi-glue">0.0</div>
-          <div class="kpi-unit">Liters</div>
-        </div>
-      </div>
-
-      <!-- LOG -->
-      <div class="panel">
-        <div class="panel-head">
-          <div class="ph-left"><div class="ph-icon">📊</div><h3>Daily Calculation Log</h3></div>
-        </div>
-        <div class="toolbar">
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            <span class="toolbar-note">All entries for today's job · Auto-saved</span>
-            <div class="search-wrap">
-              <span class="search-icon">🔍</span>
-              <input type="text" class="search-input" id="searchInput" placeholder="Search tags…" oninput="renderFiltered()">
-            </div>
-          </div>
-          <div class="toolbar-btns">
-            <button class="btn btn-gold" onclick="exportPDF()">
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/></svg>
-              PDF Report
-            </button>
-            <button class="btn btn-blue" onclick="exportExcel()">
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M7.25 7.689V2a.75.75 0 0 1 1.5 0v5.689l1.97-1.97a.749.749 0 1 1 1.06 1.06l-3.25 3.25a.749.749 0 0 1-1.06 0L4.22 6.779a.749.749 0 1 1 1.06-1.06l1.97 1.97Z"/></svg>
-              Excel
-            </button>
-            <button class="btn btn-red" onclick="clearLog()">
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M11 1.75V3h2.25a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1 0-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75ZM4.496 6.675l.66 6.6a.25.25 0 0 0 .249.225h5.19a.25.25 0 0 0 .249-.225l.66-6.6a.75.75 0 0 1 1.492.149l-.66 6.6A1.748 1.748 0 0 1 10.595 15h-5.19a1.75 1.75 0 0 1-1.741-1.575l-.66-6.6a.75.75 0 1 1 1.492-.15ZM6.5 1.75V3h3V1.75a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25Z"/></svg>
-              Clear
-            </button>
-          </div>
-        </div>
-
-        <div class="tbl-wrap">
-          <table>
+        <table>
             <thead>
-              <tr>
-                <th style="width:34px">#</th>
-                <th style="text-align:left;min-width:170px">Tag Description</th>
-                <th>Category</th>
-                <th>m²</th>
-                <th>Joint (m)</th>
-                <th>Chair</th>
-                <th>F-Prof (m)</th>
-                <th>GI Corner</th>
-                <th>Sliding Ch.</th>
-                <th>PVC Corner</th>
-                <th>Bolts</th>
-                <th>Tape (Rolls)</th>
-                <th>Glue (L)</th>
-                <th>Silicone</th>
-                <th style="width:60px">Actions</th>
-              </tr>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Tag Desc</th>
+                    <th>Duct Sqm</th>
+                    <th>PH Sheet</th>
+                    <th>JT (m)</th>
+                    <th>H (m)</th>
+                    <th>U (m)</th>
+                    <th>F (m)</th>
+                    <th>GI Corner</th>
+                    <th>PVC Corner</th>
+                    <th>Sliding Ch</th>
+                    <th>Tape (Rolls)</th>
+                    <th>Duct Glue (L)</th>
+                    <th>Prof Glue (T)</th>
+                    <th>Silicone (T)</th>
+                </tr>
             </thead>
             <tbody id="logBody"></tbody>
             <tfoot>
-              <tr>
-                <td colspan="2"></td>
-                <td class="tot-lbl">Totals</td>
-                <td id="tot-sqm">—</td>
-                <td id="tot-joint">—</td>
-                <td id="tot-chair">—</td>
-                <td id="tot-fprof">—</td>
-                <td id="tot-gi">—</td>
-                <td id="tot-sliding">—</td>
-                <td id="tot-pvc">—</td>
-                <td id="tot-bolts">—</td>
-                <td id="tot-tape">—</td>
-                <td id="tot-glue">—</td>
-                <td id="tot-silicone">—</td>
-                <td></td>
-              </tr>
+                <tr id="totalRow">
+                    <td></td>
+                    <td style="text-align: right; font-weight: 900;">DAILY TOTALS:</td>
+                    <td id="tot-sqm">0</td>
+                    <td id="tot-ph">0</td>
+                    <td id="tot-jt">0</td>
+                    <td id="tot-h">0</td>
+                    <td id="tot-u">0</td>
+                    <td id="tot-f">0</td>
+                    <td id="tot-gi">0</td>
+                    <td id="tot-pvc">0</td>
+                    <td id="tot-sliding">0</td>
+                    <td id="tot-tape">0</td>
+                    <td id="tot-dglue">0</td>
+                    <td id="tot-pglue">0</td>
+                    <td id="tot-silicone">0</td>
+                </tr>
             </tfoot>
-          </table>
-          <div class="empty" id="emptyState">
-            <div class="empty-icon">📋</div>
-            <p>No entries yet. Fill in the form on the left and click <strong>Add to Log</strong>.</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- SUMMARY BY CATEGORY -->
-      <div class="panel" id="summaryPanel" style="display:none;">
-        <div class="panel-head">
-          <div class="ph-left"><div class="ph-icon">📈</div><h3>Category Summary</h3></div>
-        </div>
-        <div class="panel-body">
-          <div class="summary-grid" id="summaryGrid"></div>
-        </div>
-      </div>
-
-    </div><!-- /right -->
-  </div>
-</main>
+        </table>
+    </div>
+</div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-
-  const RATIOS = {
-    "Supply Duct":      { tape: 0.2003, glue: 0.0401, silicone: 0.3606 },
-    "Return Duct":      { tape: 0.1800, glue: 0.0350, silicone: 0.3000 },
-    "Exhaust Duct":     { tape: 0.2200, glue: 0.0450, silicone: 0.4200 },
-    "Mouth Connection": { tape: 0.2500, glue: 0.0500, silicone: 0.4500 }
-  };
-  const BADGE_MAP = {
-    "Supply Duct":      { cls: "b-s", lbl: "Supply" },
-    "Return Duct":      { cls: "b-r", lbl: "Return" },
-    "Exhaust Duct":     { cls: "b-e", lbl: "Exhaust" },
-    "Mouth Connection": { cls: "b-m", lbl: "Mouth Conn." }
-  };
-  const CAT_COLORS = {
-    "Supply Duct": "#3d8ef0",
-    "Return Duct": "#a06ef0",
-    "Exhaust Duct": "#e85555",
-    "Mouth Connection": "#3bbf6a"
-  };
-
-  let logData  = [];
-  let editId   = null;
-  let sessionStart = new Date();
-
-  function g(id) { return document.getElementById(id); }
-  function n(id) { return Math.max(0, parseFloat(g(id).value) || 0); }
-  function esc(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-
-  /* CLOCK */
-  function tick() {
-    const now = new Date();
-    g('clock').textContent   = now.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-    g('dateline').textContent = now.toLocaleDateString([], { weekday:'long', year:'numeric', month:'short', day:'numeric' });
-    const elapsed = Math.floor((now - sessionStart) / 60000);
-    g('st-session').textContent = elapsed < 1 ? '<1 min' : elapsed + ' min';
-  }
-  setInterval(tick, 1000); tick();
-
-  g('projDate').value = new Date().toISOString().slice(0, 10);
-
-  /* CALCULATE */
-  window.calculate = function () {
-    const sqm = n('sqm');
-    const cat = g('category').value;
-    const jp  = n('jointProf');
-    const gi  = n('giCorner');
-    const sliding  = jp > 0 ? Math.ceil(jp / 8) : 0;
-    const pvc      = gi > 0 ? Math.ceil(gi / 2) : 0;
-    const bolts    = gi * 2;
-    let tape = 0, glue = 0, silicone = 0;
-    if (RATIOS[cat] && sqm > 0) {
-      tape     = Math.ceil(sqm * RATIOS[cat].tape);
-      glue     = Math.round(sqm * RATIOS[cat].glue * 10) / 10;
-      silicone = Math.ceil(sqm * RATIOS[cat].silicone);
-    }
-    g('r-sliding').textContent  = sliding;
-    g('r-pvc').textContent      = pvc;
-    g('r-bolts').textContent    = bolts;
-    g('r-tape').textContent     = tape;
-    g('r-glue').textContent     = glue;
-    g('r-silicone').textContent = silicone;
-  };
-
-  /* ADD / UPDATE LOG */
-  window.addToLog = function () {
-    const tag = g('tagDesc').value.trim();
-    const sqm = parseFloat(g('sqm').value);
-    if (!tag || !sqm || sqm <= 0) {
-      g('errMsg').style.display = 'block';
-      g('tagDesc').focus(); return;
-    }
-    g('errMsg').style.display = 'none';
-    const now = new Date();
-    const ts  = now.toLocaleDateString('en-GB') + ' ' + now.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
-    const entry = {
-      id: editId || Date.now(), ts,
-      tag, cat: g('category').value, sqm,
-      joint:   n('jointProf'),
-      chair:   n('chairQty'),
-      fprof:   n('fProf'),
-      gi:      n('giCorner'),
-      sliding: parseInt(g('r-sliding').textContent) || 0,
-      pvc:     parseInt(g('r-pvc').textContent)      || 0,
-      bolts:   parseInt(g('r-bolts').textContent)    || 0,
-      tape:    parseInt(g('r-tape').textContent)      || 0,
-      glue:    parseFloat(g('r-glue').textContent)   || 0,
-      silicone:parseInt(g('r-silicone').textContent) || 0
+    // Exact Ratios extracted from the provided Excel Sheet (Sheet2, 3, 4)
+    const ratios = {
+        tape: 0.096,      // Rolls per Sqm
+        ductGlue: 0.08,   // Liters per Sqm
+        profGlue: 0.01,   // Tubes per Sqm
+        silicone: 0.32    // Tubes per Sqm
     };
-    if (editId) {
-      logData = logData.map(e => e.id === editId ? entry : e);
-      editId = null;
-      g('addBtn').innerHTML = `<svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2Z"/></svg> Add to Log`;
-      g('editingBadge').textContent = '';
-      toast('✏️', 'Entry updated');
-    } else {
-      logData.push(entry);
-      toast('✅', 'Entry added to log');
-    }
-    save(); render(); clearForm();
-  };
 
-  /* RENDER */
-  function render() {
-    const tbody   = g('logBody');
-    const empty   = g('emptyState');
-    const query   = (g('searchInput').value || '').toLowerCase();
-    const visible = query ? logData.filter(e => e.tag.toLowerCase().includes(query) || e.cat.toLowerCase().includes(query)) : logData;
+    const totalIds = [
+        'tot-sqm', 'tot-ph', 'tot-jt', 'tot-h', 'tot-u', 'tot-f', 
+        'tot-gi', 'tot-pvc', 'tot-sliding', 'tot-tape', 'tot-dglue', 'tot-pglue', 'tot-silicone'
+    ];
 
-    if (logData.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; } 
-    else { empty.style.display = 'none'; }
+    function calculate() {
+        const sqm = Math.max(0, parseFloat(document.getElementById('sqm').value) || 0);
+        const wasteFactor = Math.max(1, parseFloat(document.getElementById('wasteFactor').value) || 1.2);
+        const jointProf = Math.max(0, parseFloat(document.getElementById('jointProf').value) || 0);
+        const giCorner = Math.max(0, parseFloat(document.getElementById('giCorner').value) || 0);
 
-    tbody.innerHTML = visible.map((e, i) => {
-      const b = BADGE_MAP[e.cat] || { cls:'b-s', lbl: e.cat };
-      return `<tr id="row-${e.id}">
-        <td>${logData.indexOf(e) + 1}</td>
-        <td><div class="tag-name">${esc(e.tag)}</div><div class="tag-ts">${e.ts}</div></td>
-        <td><span class="badge ${b.cls}">${b.lbl}</span></td>
-        <td class="nc">${parseFloat(e.sqm).toFixed(2)}</td>
-        <td class="nc">${e.joint}</td>
-        <td class="nc">${e.chair}</td>
-        <td class="nc">${e.fprof}</td>
-        <td class="nc">${e.gi}</td>
-        <td class="nc">${e.sliding}</td>
-        <td class="nc">${e.pvc}</td>
-        <td class="nc">${e.bolts}</td>
-        <td class="nch">${e.tape}</td>
-        <td class="nc">${e.glue.toFixed(1)}</td>
-        <td class="nc">${e.silicone}</td>
-        <td style="white-space:nowrap;">
-          <button class="edit-btn" onclick="editRow(${e.id})" title="Edit">✏️</button>
-          <button class="del-btn" onclick="deleteRow(${e.id})" title="Remove">✕</button>
-        </td>
-      </tr>`;
-    }).join('');
+        // 1. Panel Calculation
+        const phSheet = Math.round(sqm * wasteFactor * 100) / 100;
 
-    totals(); kpis(); renderSummary();
-  }
+        // 2. Hardware Calculations
+        const pvcCorner = Math.ceil(giCorner / 2);
+        const slidingCh = Math.ceil(jointProf / 8);
 
-  window.renderFiltered = render;
-
-  /* TOTALS */
-  function totals() {
-    const keys = ['sqm','joint','chair','fprof','gi','sliding','pvc','bolts','tape','glue','silicone'];
-    if (logData.length === 0) { keys.forEach(k => { g('tot-'+k).textContent = '—'; }); return; }
-    const T = {};
-    keys.forEach(k => { T[k] = logData.reduce((s,e) => s + (parseFloat(e[k])||0), 0); });
-    g('tot-sqm').textContent     = T.sqm.toFixed(2);
-    g('tot-joint').textContent   = T.joint.toFixed(1);
-    g('tot-chair').textContent   = Math.round(T.chair);
-    g('tot-fprof').textContent   = T.fprof.toFixed(1);
-    g('tot-gi').textContent      = Math.round(T.gi);
-    g('tot-sliding').textContent = Math.round(T.sliding);
-    g('tot-pvc').textContent     = Math.round(T.pvc);
-    g('tot-bolts').textContent   = Math.round(T.bolts);
-    g('tot-tape').textContent    = Math.round(T.tape);
-    g('tot-glue').textContent    = T.glue.toFixed(1);
-    g('tot-silicone').textContent= Math.round(T.silicone);
-  }
-
-  /* KPIs */
-  function kpis() {
-    const sqm  = logData.reduce((s,e)=>s+parseFloat(e.sqm),0);
-    const tape = logData.reduce((s,e)=>s+e.tape,0);
-    const sil  = logData.reduce((s,e)=>s+e.silicone,0);
-    const glue = logData.reduce((s,e)=>s+e.glue,0);
-    g('kpi-tags').textContent     = logData.length;
-    g('kpi-sqm').textContent      = sqm.toFixed(2);
-    g('kpi-tape').textContent     = tape;
-    g('kpi-silicone').textContent = sil;
-    g('kpi-glue').textContent     = glue.toFixed(1);
-    g('st-tags').textContent      = logData.length;
-    g('st-sqm').textContent       = sqm.toFixed(2);
-    g('st-tape').textContent      = tape;
-    g('st-silicone').textContent  = sil;
-    g('st-glue').textContent      = glue.toFixed(1);
-  }
-
-  /* SUMMARY CARDS */
-  function renderSummary() {
-    const panel = g('summaryPanel');
-    if (logData.length === 0) { panel.style.display = 'none'; return; }
-    panel.style.display = 'block';
-    const catT = {};
-    Object.keys(RATIOS).forEach(k => { catT[k] = {sqm:0,tape:0,glue:0,silicone:0,count:0}; });
-    logData.forEach(e => {
-      if (catT[e.cat]) {
-        catT[e.cat].sqm      += parseFloat(e.sqm);
-        catT[e.cat].tape     += e.tape;
-        catT[e.cat].glue     += e.glue;
-        catT[e.cat].silicone += e.silicone;
-        catT[e.cat].count++;
-      }
-    });
-    const grid = g('summaryGrid');
-    grid.innerHTML = Object.entries(catT).filter(([,v])=>v.count>0).map(([cat,v])=>`
-      <div class="sum-card">
-        <div class="sum-card-title" style="color:${CAT_COLORS[cat]}">${cat}</div>
-        <div class="sum-row"><span class="sum-key">Tags</span><span class="sum-val">${v.count}</span></div>
-        <div class="sum-row"><span class="sum-key">Area</span><span class="sum-val">${v.sqm.toFixed(2)} m²</span></div>
-        <div class="sum-row"><span class="sum-key">Tape</span><span class="sum-val">${v.tape} rolls</span></div>
-        <div class="sum-row"><span class="sum-key">Glue</span><span class="sum-val">${v.glue.toFixed(1)} L</span></div>
-        <div class="sum-row"><span class="sum-key">Silicone</span><span class="sum-val">${v.silicone} pcs</span></div>
-      </div>
-    `).join('');
-  }
-
-  /* EDIT ROW */
-  window.editRow = function(id) {
-    const e = logData.find(e=>e.id===id);
-    if (!e) return;
-    editId = id;
-    g('tagDesc').value  = e.tag;
-    g('category').value = e.cat;
-    g('sqm').value      = e.sqm;
-    g('jointProf').value= e.joint;
-    g('chairQty').value = e.chair;
-    g('fProf').value    = e.fprof;
-    g('giCorner').value = e.gi;
-    calculate();
-    g('addBtn').innerHTML = `<svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61Zm1.414 1.06a.25.25 0 0 0-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 0 0 0-.354l-1.086-1.086ZM11.189 6.25 9.75 4.81l-6.286 6.287a.25.25 0 0 0-.064.108l-.558 1.953 1.953-.558a.249.249 0 0 0 .108-.064L11.189 6.25Z"/></svg> Update Entry`;
-    g('editingBadge').textContent = '✏️ Editing: ' + e.tag;
-    g('tagDesc').scrollIntoView({ behavior:'smooth', block:'center' });
-    g('tagDesc').focus();
-  };
-
-  /* DELETE ROW */
-  window.deleteRow = function(id) {
-    logData = logData.filter(e=>e.id!==id);
-    save(); render();
-    toast('🗑️', 'Entry removed');
-  };
-
-  /* CLEAR FORM */
-  window.clearForm = function() {
-    ['tagDesc','sqm','jointProf','chairQty','fProf','giCorner'].forEach(id => { g(id).value=''; });
-    g('errMsg').style.display = 'none';
-    editId = null;
-    g('addBtn').innerHTML = `<svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2Z"/></svg> Add to Log`;
-    g('editingBadge').textContent = '';
-    calculate();
-  };
-
-  /* CLEAR LOG */
-  window.clearLog = function() {
-    if (confirm('Clear the entire daily log? This cannot be undone.')) {
-      logData = []; save(); render();
-    }
-  };
-
-  /* SAVE */
-  function save() {
-    try { localStorage.setItem('hvac_alkanz_v1', JSON.stringify(logData)); } catch (_) {}
-  }
-
-  /* TOAST */
-  function toast(icon, msg) {
-    g('toastIcon').textContent = icon;
-    g('toastMsg').textContent  = msg;
-    const t = g('toast');
-    t.classList.add('show');
-    setTimeout(()=>t.classList.remove('show'), 2800);
-  }
-
-  /* ── PDF REPORT ── */
-  window.exportPDF = function() {
-    if (logData.length === 0) { toast('⚠️', 'No data to export. Add entries first.'); return; }
-
-    const projName  = g('projName').value.trim()   || 'Unnamed Project';
-    const client    = g('client').value.trim()      || '—';
-    const prepBy    = g('prepBy').value.trim()      || '—';
-    const checkedBy = g('checkedBy').value.trim()   || '—';
-    const projDate  = g('projDate').value           || new Date().toISOString().slice(0,10);
-    const sheetRef  = g('sheetRef').value.trim()    || '—';
-    const location  = g('location').value.trim()    || '—';
-    const revNo     = g('revNo').value.trim()       || '—';
-    const notes     = g('projNotes').value.trim()   || '';
-    const genDate   = new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'long', year:'numeric' });
-    const genTime   = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-
-    g('spinner').classList.add('active');
-
-    setTimeout(() => {
-      try {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-        const PW = doc.internal.pageSize.getWidth();
-        const PH = doc.internal.pageSize.getHeight();
-        const totalPages = Math.ceil(logData.length / 18) + 2; // detail pages + summary
-        let pageNum = 0;
-
-        /* ── HELPERS ── */
-        const gold  = [200, 146, 42];
-        const dark  = [14, 16, 22];
-        const dark2 = [20, 23, 31];
-        const dark3 = [26, 30, 40];
-        const text  = [220, 228, 240];
-        const text2 = [120, 132, 153];
-        const text3 = [74,  82, 104];
-        const white = [255, 255, 255];
-        const red   = [232, 85,  85];
-        const blue  = [61, 142, 240];
-        const green = [59, 191, 106];
-        const teal  = [47, 184, 172];
-        const amber = [240, 160, 64];
-
-        function newPage() {
-          if (pageNum > 0) doc.addPage('a4', 'landscape');
-          pageNum++;
-          drawPageFrame();
+        // 3. Consumable Calculations based on Excel Ratios
+        let tape = 0, ductGlue = 0, profGlue = 0, silicone = 0;
+        if (sqm > 0) {
+            tape = Math.ceil(sqm * ratios.tape); 
+            ductGlue = Math.round(sqm * ratios.ductGlue * 100) / 100; 
+            profGlue = Math.ceil(sqm * ratios.profGlue); 
+            silicone = Math.ceil(sqm * ratios.silicone); 
         }
 
-        function drawPageFrame() {
-          // Background
-          doc.setFillColor(...dark);
-          doc.rect(0, 0, PW, PH, 'F');
+        // Output to Auto-Calculated Fields
+        document.getElementById('phSheet').value = phSheet;
+        document.getElementById('pvcCorner').value = pvcCorner;
+        document.getElementById('slidingCh').value = slidingCh;
+        document.getElementById('tapeQty').value = tape;
+        document.getElementById('ductGlue').value = ductGlue;
+        document.getElementById('profGlue').value = profGlue;
+        document.getElementById('siliconeQty').value = silicone;
+    }
 
-          // Subtle gradient overlay top
-          doc.setFillColor(200, 146, 42);
-          doc.setGState(doc.GState({ opacity: 0.03 }));
-          doc.rect(0, 0, PW/2, PH, 'F');
-          doc.setGState(doc.GState({ opacity: 1 }));
+    function addToLog() {
+        const tagDesc = document.getElementById('tagDesc').value.trim();
+        const sqm = document.getElementById('sqm').value;
+        
+        if (!tagDesc || !sqm || parseFloat(sqm) <= 0) {
+            document.getElementById('errorMsg').style.display = 'block';
+            return;
+        }
+        document.getElementById('errorMsg').style.display = 'none';
 
-          // Top border line
-          doc.setDrawColor(...gold);
-          doc.setLineWidth(0.8);
-          doc.line(0, 12, PW, 12);
+        const now = new Date();
+        const timestamp = now.toLocaleDateString() + " " + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        
+        const rowData = [
+            timestamp,
+            tagDesc,
+            sqm,
+            document.getElementById('phSheet').value,
+            document.getElementById('jointProf').value || 0,
+            document.getElementById('hProf').value || 0,
+            document.getElementById('uProf').value || 0,
+            document.getElementById('fProf').value || 0,
+            document.getElementById('giCorner').value || 0,
+            document.getElementById('pvcCorner').value,
+            document.getElementById('slidingCh').value,
+            document.getElementById('tapeQty').value,
+            document.getElementById('ductGlue').value,
+            document.getElementById('profGlue').value,
+            document.getElementById('siliconeQty').value
+        ];
 
-          // Bottom footer bar
-          doc.setFillColor(...dark2);
-          doc.rect(0, PH-12, PW, 12, 'F');
-          doc.setDrawColor(...gold);
-          doc.setLineWidth(0.4);
-          doc.line(0, PH-12, PW, PH-12);
+        const tbody = document.getElementById('logBody');
+        const row = document.createElement('tr');
 
-          // Footer text
-          doc.setFontSize(7);
-          doc.setTextColor(...text3);
-          doc.text('ALKANZ CROSS — HVAC DUCT MATERIAL CALCULATION REPORT', 8, PH-4.5);
-          doc.text(`Page ${pageNum} of ${totalPages}`, PW-8, PH-4.5, { align:'right' });
-          doc.text(`Generated: ${genDate} ${genTime}`, PW/2, PH-4.5, { align:'center' });
+        rowData.forEach(data => {
+            const td = document.createElement('td');
+            td.textContent = data;
+            row.appendChild(td);
+        });
 
-          // ALKANZ watermark (cross pattern diagonally across page)
-          doc.setFontSize(52);
-          doc.setTextColor(200, 146, 42);
-          doc.setGState(doc.GState({ opacity: 0.035 }));
-          for (let y = 20; y < PH; y += 55) {
-            for (let x = 10; x < PW; x += 110) {
-              doc.text('ALKANZ', x, y, { angle: 30 });
+        tbody.appendChild(row);
+        updateTotalsFromRow(row); 
+        saveLog(); 
+        clearForm(); 
+    }
+
+    function updateTotalsFromRow(row) {
+        const cells = row.querySelectorAll('td');
+        let totalIdx = 0;
+        
+        // Start at index 2 to skip Timestamp and Tag Desc
+        for (let i = 2; i < cells.length; i++) {
+            const totElement = document.getElementById(totalIds[totalIdx]);
+            let currentTotal = parseFloat(totElement.textContent) || 0;
+            let cellValue = parseFloat(cells[i].textContent) || 0;
+            let newTotal = currentTotal + cellValue;
+
+            // Formatting rules for specific columns
+            if (totalIds[totalIdx] === 'tot-sqm' || totalIds[totalIdx] === 'tot-ph') {
+                totElement.textContent = newTotal.toFixed(2);
+            } else if (totalIds[totalIdx] === 'tot-dglue') {
+                totElement.textContent = newTotal.toFixed(2); // 2 decimals for liters
+            } else {
+                totElement.textContent = Math.round(newTotal);
             }
-          }
-          doc.setGState(doc.GState({ opacity: 1 }));
-
-          // Cross watermark — large centered
-          doc.setDrawColor(200, 146, 42);
-          doc.setLineWidth(14);
-          doc.setGState(doc.GState({ opacity: 0.025 }));
-          doc.line(PW/2, PH/2 - 40, PW/2, PH/2 + 40);
-          doc.line(PW/2 - 40, PH/2, PW/2 + 40, PH/2);
-          doc.setGState(doc.GState({ opacity: 1 }));
-          doc.setLineWidth(0.3);
+            totalIdx++;
         }
+    }
 
-        function drawHeader(subtitle) {
-          // Top header zone
-          doc.setFillColor(...dark2);
-          doc.rect(0, 0, PW, 12, 'F');
+    function recalculateAllTotals() {
+        totalIds.forEach(id => document.getElementById(id).textContent = '0'); 
+        const rows = document.getElementById('logBody').querySelectorAll('tr');
+        rows.forEach(row => updateTotalsFromRow(row));
+    }
 
-          // Gold top accent line
-          doc.setFillColor(...gold);
-          doc.rect(0, 0, PW, 1.5, 'F');
+    function clearForm() {
+        document.getElementById('tagDesc').value = '';
+        document.getElementById('sqm').value = '';
+        document.getElementById('jointProf').value = '';
+        document.getElementById('hProf').value = '';
+        document.getElementById('uProf').value = '';
+        document.getElementById('fProf').value = '';
+        document.getElementById('giCorner').value = '';
+        calculate(); 
+    }
 
-          // Logo box
-          doc.setFillColor(...gold);
-          doc.roundedRect(6, 2.5, 7, 7, 1, 1, 'F');
-          doc.setFontSize(10);
-          doc.setTextColor(30, 15, 0);
-          doc.text('✦', 9.5, 8, { align:'center' });
+    function exportCSV() {
+        const rows = document.querySelectorAll('table tr'); 
+        let csv = [];
 
-          // Title
-          doc.setFontSize(11);
-          doc.setTextColor(...text);
-          doc.setFont(undefined, 'bold');
-          doc.text('HVAC DUCT MATERIAL CALCULATOR', 16, 7);
-
-          // Subtitle
-          doc.setFontSize(7);
-          doc.setFont(undefined, 'normal');
-          doc.setTextColor(...text3);
-          doc.text(subtitle, 16, 10.5);
-
-          // ALKANZ badge right
-          doc.setFillColor(200, 146, 42, 0.15);
-          doc.roundedRect(PW-52, 2.5, 46, 7, 1.5, 1.5, 'F');
-          doc.setDrawColor(...gold);
-          doc.setLineWidth(0.3);
-          doc.roundedRect(PW-52, 2.5, 46, 7, 1.5, 1.5, 'S');
-          // Cross icon
-          doc.setDrawColor(...gold);
-          doc.setLineWidth(0.8);
-          doc.line(PW-49.5, 4, PW-49.5, 9);
-          doc.line(PW-52, 6.5, PW-47, 6.5);
-          doc.setFontSize(8);
-          doc.setTextColor(...gold);
-          doc.setFont(undefined, 'bold');
-          doc.text('ALKANZ', PW-45, 7.5);
-          doc.setFont(undefined, 'normal');
-        }
-
-        /* ── PAGE 1: COVER / PROJECT INFO ── */
-        newPage();
-        drawHeader('Project Information & Material Summary');
-
-        // Project title block
-        const titleY = 20;
-        doc.setFillColor(...dark2);
-        doc.roundedRect(8, titleY, PW-16, 28, 2, 2, 'F');
-        doc.setDrawColor(...gold);
-        doc.setLineWidth(0.5);
-        doc.roundedRect(8, titleY, PW-16, 28, 2, 2, 'S');
-        // Gold left accent
-        doc.setFillColor(...gold);
-        doc.roundedRect(8, titleY, 3, 28, 1, 1, 'F');
-
-        doc.setFontSize(16);
-        doc.setFont(undefined, 'bold');
-        doc.setTextColor(...text);
-        doc.text(projName.toUpperCase(), 16, titleY + 10);
-
-        doc.setFontSize(8.5);
-        doc.setFont(undefined, 'normal');
-        doc.setTextColor(...text2);
-        doc.text('HVAC DUCT MATERIAL CALCULATION REPORT', 16, titleY + 17);
-
-        doc.setFontSize(7.5);
-        doc.setTextColor(...text3);
-        doc.text(`Document Ref: ${sheetRef}   |   Revision: ${revNo}   |   Location: ${location}`, 16, titleY + 23);
-
-        // Project info table
-        const iY = 54;
-        doc.setFillColor(...dark3);
-        doc.roundedRect(8, iY, PW-16, 36, 2, 2, 'F');
-
-        const infoItems = [
-          ['Project Name', projName],   ['Client / Employer', client],
-          ['Prepared By', prepBy],      ['Checked By', checkedBy],
-          ['Date', projDate],           ['Drawing / Sheet Ref', sheetRef],
-          ['Location / Zone', location],['Revision No.', revNo],
-        ];
-        const colW = (PW-16) / 4;
-        infoItems.forEach((item, idx) => {
-          const col = idx % 4;
-          const row = Math.floor(idx / 4);
-          const x = 8 + col * colW + 4;
-          const y = iY + 7 + row * 16;
-          doc.setFontSize(6.5);
-          doc.setTextColor(...text3);
-          doc.text(item[0].toUpperCase(), x, y);
-          doc.setFontSize(8.5);
-          doc.setTextColor(...text);
-          doc.setFont(undefined, 'bold');
-          doc.text(item[1], x, y+6);
-          doc.setFont(undefined, 'normal');
-        });
-
-        // KPI tiles row
-        const kpiY = 96;
-        const kpiData = [
-          { lbl:'TOTAL TAGS', val:logData.length.toString(), unit:'entries', color: gold },
-          { lbl:'TOTAL AREA', val:logData.reduce((s,e)=>s+parseFloat(e.sqm),0).toFixed(2), unit:'m²', color: blue },
-          { lbl:'ALUM. TAPE', val:logData.reduce((s,e)=>s+e.tape,0).toString(), unit:'60-yd rolls', color: amber },
-          { lbl:'SILICONE', val:logData.reduce((s,e)=>s+e.silicone,0).toString(), unit:'cartridges', color: green },
-          { lbl:'GLUE', val:logData.reduce((s,e)=>s+e.glue,0).toFixed(1), unit:'liters', color: teal },
-        ];
-        const tileW = (PW-16) / 5 - 2;
-        kpiData.forEach((k, i) => {
-          const x = 8 + i * (tileW + 2);
-          doc.setFillColor(...dark2);
-          doc.roundedRect(x, kpiY, tileW, 22, 2, 2, 'F');
-          doc.setFillColor(...k.color);
-          doc.rect(x, kpiY, tileW, 1.2, 'F');
-          doc.setFontSize(5.5);
-          doc.setTextColor(...text3);
-          doc.text(k.lbl, x + tileW/2, kpiY+7, { align:'center' });
-          doc.setFontSize(14);
-          doc.setFont(undefined, 'bold');
-          doc.setTextColor(...k.color);
-          doc.text(k.val, x + tileW/2, kpiY+16, { align:'center' });
-          doc.setFontSize(5.5);
-          doc.setFont(undefined, 'normal');
-          doc.setTextColor(...text3);
-          doc.text(k.unit, x + tileW/2, kpiY+20, { align:'center' });
-        });
-
-        // Category breakdown
-        const catY = 124;
-        doc.setFontSize(7);
-        doc.setFont(undefined, 'bold');
-        doc.setTextColor(...gold);
-        doc.text('▌ MATERIAL BREAKDOWN BY CATEGORY', 8, catY);
-
-        const catT = {};
-        Object.keys(RATIOS).forEach(k => { catT[k] = {sqm:0,tape:0,glue:0,silicone:0,count:0}; });
-        logData.forEach(e => {
-          if (catT[e.cat]) {
-            catT[e.cat].sqm      += parseFloat(e.sqm);
-            catT[e.cat].tape     += e.tape;
-            catT[e.cat].glue     += e.glue;
-            catT[e.cat].silicone += e.silicone;
-            catT[e.cat].count++;
-          }
-        });
-
-        const catCols = Object.keys(catT);
-        const cW = (PW-16) / 4 - 2;
-        const catColors = { "Supply Duct": blue, "Return Duct": [160,110,240], "Exhaust Duct": red, "Mouth Connection": green };
-        catCols.forEach((cat, ci) => {
-          const v = catT[cat];
-          const cx = 8 + ci * (cW + 2);
-          const cy = catY + 5;
-          const ch = 42;
-          doc.setFillColor(...dark2);
-          doc.roundedRect(cx, cy, cW, ch, 2, 2, 'F');
-          const cc = catColors[cat] || gold;
-          doc.setFillColor(...cc);
-          doc.rect(cx, cy, cW, 1.2, 'F');
-          doc.setFontSize(6.5);
-          doc.setFont(undefined, 'bold');
-          doc.setTextColor(...cc);
-          doc.text(cat.toUpperCase(), cx + 4, cy + 8);
-          doc.setFont(undefined, 'normal');
-          const rows = [
-            ['Tags', v.count],
-            ['Area (m²)', v.sqm.toFixed(2)],
-            ['Tape (rolls)', v.tape],
-            ['Glue (L)', v.glue.toFixed(1)],
-            ['Silicone (pcs)', v.silicone],
-          ];
-          rows.forEach((r, ri) => {
-            const ry = cy + 14 + ri * 5.8;
-            doc.setFontSize(6);
-            doc.setTextColor(...text3);
-            doc.text(r[0], cx + 4, ry);
-            doc.setTextColor(...text);
-            doc.text(String(r[1]), cx + cW - 4, ry, { align:'right' });
-          });
-        });
-
-        // Notes section
-        if (notes) {
-          const nY = 172;
-          doc.setFillColor(...dark3);
-          doc.roundedRect(8, nY, PW-16, 16, 2, 2, 'F');
-          doc.setFontSize(6);
-          doc.setFont(undefined, 'bold');
-          doc.setTextColor(...gold);
-          doc.text('NOTES / REMARKS', 12, nY + 6);
-          doc.setFont(undefined, 'normal');
-          doc.setTextColor(...text2);
-          const noteLines = doc.splitTextToSize(notes, PW - 32);
-          doc.text(noteLines.slice(0,2), 12, nY + 11);
-        }
-
-        /* ── PAGES 2+: DETAIL LOG ── */
-        const rowsPerPage = 18;
-        const chunks = [];
-        for (let i=0; i<logData.length; i+=rowsPerPage) {
-          chunks.push(logData.slice(i, i+rowsPerPage));
-        }
-
-        const cols = [
-          { hdr:'#',            w:8,   align:'center' },
-          { hdr:'TAG DESCRIPTION', w:52, align:'left' },
-          { hdr:'CATEGORY',     w:28,  align:'center' },
-          { hdr:'AREA (m²)',    w:16,  align:'right' },
-          { hdr:'JOINT (m)',    w:15,  align:'right' },
-          { hdr:'CHAIR',        w:12,  align:'right' },
-          { hdr:'F-PROF (m)',   w:15,  align:'right' },
-          { hdr:'GI CORNER',    w:15,  align:'right' },
-          { hdr:'SLIDING CH.',  w:15,  align:'right' },
-          { hdr:'PVC CORNER',   w:15,  align:'right' },
-          { hdr:'BOLTS',        w:12,  align:'right' },
-          { hdr:'TAPE (ROLLS)', w:16,  align:'right' },
-          { hdr:'GLUE (L)',     w:12,  align:'right' },
-          { hdr:'SILICONE',     w:14,  align:'right' },
-        ];
-        const tableLeft = 8;
-        const tableRight = PW - 8;
-        const tableW = tableRight - tableLeft;
-        // Scale cols to fit
-        const totalW = cols.reduce((s,c)=>s+c.w, 0);
-        const scale = tableW / totalW;
-        let colX = [tableLeft];
-        cols.forEach((c,i) => { colX.push(colX[i] + c.w * scale); });
-
-        chunks.forEach((chunk, chunkIdx) => {
-          newPage();
-          drawHeader(`Detail Log — Sheet ${chunkIdx+1} of ${chunks.length} | Project: ${projName}`);
-
-          const tblTop = 16;
-          const hH = 7;
-          const rH = 6.5;
-
-          // Header row
-          doc.setFillColor(...dark3);
-          doc.rect(tableLeft, tblTop, tableW, hH, 'F');
-          doc.setDrawColor(...gold);
-          doc.setLineWidth(0.4);
-          doc.line(tableLeft, tblTop, tableRight, tblTop);
-          doc.line(tableLeft, tblTop+hH, tableRight, tblTop+hH);
-
-          cols.forEach((col, ci) => {
-            const cx = colX[ci];
-            const cw = colX[ci+1] - cx;
-            const tx = col.align==='right' ? cx+cw-2 : col.align==='center' ? cx+cw/2 : cx+2;
-            doc.setFontSize(5.5);
-            doc.setFont(undefined, 'bold');
-            doc.setTextColor(...text3);
-            doc.text(col.hdr, tx, tblTop + hH - 1.8, { align: col.align==='center'?'center':col.align==='right'?'right':'left' });
-          });
-
-          // Data rows
-          chunk.forEach((e, ri) => {
-            const ry = tblTop + hH + ri * rH;
-            const isEven = ri % 2 === 0;
-            doc.setFillColor(isEven ? 20 : 16, isEven ? 23 : 18, isEven ? 31 : 24);
-            doc.rect(tableLeft, ry, tableW, rH, 'F');
-
-            const globalIdx = chunkIdx * rowsPerPage + ri;
-            const rowVals = [
-              String(globalIdx+1),
-              e.tag.length > 32 ? e.tag.slice(0,30)+'…' : e.tag,
-              e.cat.replace(' Duct','').replace('Mouth Connection','Mouth'),
-              parseFloat(e.sqm).toFixed(2),
-              String(e.joint),
-              String(e.chair),
-              String(e.fprof),
-              String(e.gi),
-              String(e.sliding),
-              String(e.pvc),
-              String(e.bolts),
-              String(e.tape),
-              e.glue.toFixed(1),
-              String(e.silicone),
-            ];
-
-            rowVals.forEach((val, ci) => {
-              const col = cols[ci];
-              const cx = colX[ci];
-              const cw = colX[ci+1] - cx;
-              let tx, al;
-              if (col.align==='right') { tx = cx+cw-2; al='right'; }
-              else if (col.align==='center') { tx = cx+cw/2; al='center'; }
-              else { tx = cx+2; al='left'; }
-
-              doc.setFont(undefined, 'normal');
-              if (ci === 11) { // Tape col — highlight
-                doc.setFontSize(6.5);
-                doc.setFont(undefined, 'bold');
-                doc.setTextColor(...gold);
-              } else if (ci === 0) {
-                doc.setFontSize(5.5);
-                doc.setTextColor(...text3);
-              } else if (ci === 2) {
-                const cc = catColors[e.cat] || gold;
-                doc.setFontSize(6);
-                doc.setTextColor(...cc);
-              } else {
-                doc.setFontSize(6.5);
-                doc.setTextColor(...text2);
-              }
-              doc.text(val, tx, ry + rH - 1.8, { align: al });
+        rows.forEach(row => {
+            const cols = row.querySelectorAll('td, th');
+            const rowData = [];
+            cols.forEach(col => {
+                let data = col.textContent.trim().replace(/"/g, '""');
+                if (data !== '' && !isNaN(data)) {
+                    rowData.push(data);
+                } else {
+                    rowData.push('"' + data + '"');
+                }
             });
-
-            // Row divider
-            doc.setDrawColor(...dark3.map(v=>v+10));
-            doc.setLineWidth(0.2);
-            doc.line(tableLeft, ry+rH, tableRight, ry+rH);
-          });
-
-          // Column dividers
-          doc.setDrawColor(...dark3.map(v=>v+5));
-          doc.setLineWidth(0.2);
-          colX.slice(1,-1).forEach(x => {
-            doc.line(x, tblTop, x, tblTop + hH + chunk.length*rH);
-          });
-          // Table border
-          doc.setDrawColor(...gold);
-          doc.setLineWidth(0.5);
-          doc.rect(tableLeft, tblTop, tableW, hH + chunk.length*rH, 'S');
-
-          // Totals row (last chunk only)
-          if (chunkIdx === chunks.length - 1) {
-            const totY = tblTop + hH + chunk.length * rH;
-            doc.setFillColor(12, 14, 20);
-            doc.rect(tableLeft, totY, tableW, 8, 'F');
-            doc.setDrawColor(...gold);
-            doc.setLineWidth(0.6);
-            doc.line(tableLeft, totY, tableRight, totY);
-
-            const sum = k => logData.reduce((s,e)=>s+(parseFloat(e[k])||0),0);
-            const totVals = [
-              '', 'DAILY TOTALS', '',
-              sum('sqm').toFixed(2), sum('joint').toFixed(1), Math.round(sum('chair')).toString(),
-              sum('fprof').toFixed(1), Math.round(sum('gi')).toString(), Math.round(sum('sliding')).toString(),
-              Math.round(sum('pvc')).toString(), Math.round(sum('bolts')).toString(),
-              Math.round(sum('tape')).toString(), sum('glue').toFixed(1), Math.round(sum('silicone')).toString()
-            ];
-            totVals.forEach((val, ci) => {
-              if (!val) return;
-              const col = cols[ci];
-              const cx = colX[ci];
-              const cw = colX[ci+1] - cx;
-              let tx, al;
-              if (col.align==='right') { tx=cx+cw-2; al='right'; }
-              else if (col.align==='center') { tx=cx+cw/2; al='center'; }
-              else { tx=cx+2; al='left'; }
-              doc.setFontSize(ci===1 ? 5 : 7);
-              doc.setFont(undefined, 'bold');
-              doc.setTextColor(...(ci===11 ? gold : ci===1 ? text3 : gold));
-              doc.text(val, tx, totY+5.5, { align: al });
-            });
-          }
+            csv.push(rowData.join(','));
         });
 
-        /* ── LAST PAGE: HARDWARE SUMMARY ── */
-        newPage();
-        drawHeader(`Hardware & Consumables Summary | Project: ${projName}`);
+        const blob = new Blob(["\uFEFF" + csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('hidden', '');
+        a.setAttribute('href', url);
+        const dateStr = new Date().toISOString().slice(0, 10);
+        a.setAttribute('download', `duct_material_log_${dateStr}.csv`);
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
 
-        const hY = 18;
-        doc.setFontSize(7);
-        doc.setFont(undefined, 'bold');
-        doc.setTextColor(...gold);
-        doc.text('▌ HARDWARE TOTALS', 8, hY);
+    function clearLog() {
+        if(confirm("Are you sure you want to clear the entire daily log?")) {
+            document.getElementById('logBody').innerHTML = '';
+            recalculateAllTotals(); 
+            localStorage.removeItem('ductLog');
+        }
+    }
 
-        const hwItems = [
-          ['Joint Profile (m)',      logData.reduce((s,e)=>s+(parseFloat(e.joint)||0),0).toFixed(1)],
-          ['Chair Bolts (pcs)',      Math.round(logData.reduce((s,e)=>s+(parseFloat(e.chair)||0),0)).toString()],
-          ['F-Profile (m)',          logData.reduce((s,e)=>s+(parseFloat(e.fprof)||0),0).toFixed(1)],
-          ['GI Corner (pcs)',        Math.round(logData.reduce((s,e)=>s+(parseFloat(e.gi)||0),0)).toString()],
-          ['Sliding Channel (pcs)',  Math.round(logData.reduce((s,e)=>s+(parseFloat(e.sliding)||0),0)).toString()],
-          ['PVC Corner (pcs)',       Math.round(logData.reduce((s,e)=>s+(parseFloat(e.pvc)||0),0)).toString()],
-          ['Bolts (pcs)',            Math.round(logData.reduce((s,e)=>s+(parseFloat(e.bolts)||0),0)).toString()],
-        ];
-        const hwW = (PW - 16);
-        doc.setFillColor(...dark2);
-        doc.roundedRect(8, hY+4, hwW, hwItems.length*8+6, 2, 2, 'F');
+    function saveLog() {
+        const logBody = document.getElementById('logBody').innerHTML;
+        localStorage.setItem('ductLog', logBody);
+    }
 
-        hwItems.forEach((item, i) => {
-          const iy = hY + 10 + i * 8;
-          const isEven = i%2===0;
-          if (isEven) {
-            doc.setFillColor(26,30,40);
-            doc.rect(8, iy-4, hwW, 8, 'F');
-          }
-          doc.setFontSize(7.5);
-          doc.setFont(undefined, 'normal');
-          doc.setTextColor(...text2);
-          doc.text(item[0], 14, iy);
-          doc.setFont(undefined, 'bold');
-          doc.setTextColor(...text);
-          doc.text(item[1], PW-14, iy, { align:'right' });
-          doc.setDrawColor(...dark3.map(v=>v+15));
-          doc.setLineWidth(0.2);
-          doc.line(14, iy+2, PW-14, iy+2);
-        });
-
-        const csY = hY + hwItems.length*8 + 18;
-        doc.setFontSize(7);
-        doc.setFont(undefined, 'bold');
-        doc.setTextColor(...gold);
-        doc.text('▌ CONSUMABLES TOTALS', 8, csY);
-
-        const csItems = [
-          ['Aluminium Tape (60-yd rolls)', Math.round(logData.reduce((s,e)=>s+(parseFloat(e.tape)||0),0)).toString(), amber],
-          ['Duct Glue (liters)',           logData.reduce((s,e)=>s+(parseFloat(e.glue)||0),0).toFixed(1), teal],
-          ['Silicone Cartridges (pcs)',    Math.round(logData.reduce((s,e)=>s+(parseFloat(e.silicone)||0),0)).toString(), green],
-        ];
-        doc.setFillColor(...dark2);
-        doc.roundedRect(8, csY+4, hwW, csItems.length*12+6, 2, 2, 'F');
-        csItems.forEach((item, i) => {
-          const iy = csY + 14 + i * 12;
-          doc.setFillColor(...item[2]);
-          doc.rect(8, iy-8, 3, 12, 'F');
-          doc.setFontSize(7.5);
-          doc.setFont(undefined, 'normal');
-          doc.setTextColor(...text2);
-          doc.text(item[0], 14, iy-2);
-          doc.setFontSize(14);
-          doc.setFont(undefined, 'bold');
-          doc.setTextColor(...item[2]);
-          doc.text(item[1], PW-14, iy, { align:'right' });
-          doc.setDrawColor(...dark3.map(v=>v+12));
-          doc.setLineWidth(0.2);
-          doc.line(14, iy+3, PW-14, iy+3);
-        });
-
-        // Calibration note
-        const cnY = csY + csItems.length*12 + 26;
-        doc.setFillColor(14, 16, 22);
-        doc.roundedRect(8, cnY, PW-16, 24, 2, 2, 'F');
-        doc.setDrawColor(...gold);
-        doc.setLineWidth(0.3);
-        doc.roundedRect(8, cnY, PW-16, 24, 2, 2, 'S');
-        doc.setFontSize(6);
-        doc.setFont(undefined, 'bold');
-        doc.setTextColor(...gold);
-        doc.text('CALIBRATION BASIS', 12, cnY+6);
-        doc.setFont(undefined, 'normal');
-        doc.setTextColor(...text3);
-        const calText = [
-          'Supply Duct (Cat B): Tape 0.2003 rolls/m² · Glue 0.0401 L/m² · Silicone 0.3606 pcs/m²',
-          'Return Duct (Cat C): Tape 0.1800 rolls/m² · Glue 0.0350 L/m² · Silicone 0.3000 pcs/m²',
-          'Exhaust Duct (Cat D): Tape 0.2200 rolls/m² · Glue 0.0450 L/m² · Silicone 0.4200 pcs/m²',
-          'Mouth Connection (Cat A): Tape 0.2500 rolls/m² · Glue 0.0500 L/m² · Silicone 0.4500 pcs/m²',
-          'Formulas: Sliding Ch. = CEIL(Joint Profile ÷ 8) | PVC Corner = CEIL(GI Corner ÷ 2) | Bolts = GI Corner × 2',
-          'Reference Job: 52-Sheet Supply Duct Job · Total Area: 249.6 m²'
-        ];
-        calText.forEach((t, ti) => { doc.text(t, 12, cnY + 10 + ti * 4); });
-
-        // Sign-off box
-        const soY = cnY + 30;
-        doc.setFillColor(...dark3);
-        doc.roundedRect(8, soY, PW-16, 20, 2, 2, 'F');
-        const sigCols = [
-          { lbl: 'PREPARED BY', val: prepBy },
-          { lbl: 'CHECKED BY', val: checkedBy },
-          { lbl: 'DATE', val: projDate },
-          { lbl: 'REVISION', val: revNo },
-        ];
-        const sigW = (PW-16)/4;
-        sigCols.forEach((s,si) => {
-          const sx = 8 + si * sigW + 4;
-          doc.setFontSize(5.5);
-          doc.setTextColor(...text3);
-          doc.setFont(undefined, 'bold');
-          doc.text(s.lbl, sx, soY+6);
-          doc.setDrawColor(...gold);
-          doc.setLineWidth(0.3);
-          doc.line(sx, soY+14, sx+sigW-8, soY+14);
-          doc.setFontSize(7);
-          doc.setFont(undefined, 'normal');
-          doc.setTextColor(...text);
-          doc.text(s.val, sx, soY+18);
-        });
-
-        // Save
-        const safeName = projName.replace(/[^a-z0-9]/gi,'_').slice(0,40);
-        const dateStr  = new Date().toISOString().slice(0,10);
-        doc.save(`ALKANZ_HVAC_${safeName}_${dateStr}.pdf`);
-
-        g('spinner').classList.remove('active');
-        toast('📄', 'PDF report generated successfully!');
-
-      } catch(err) {
-        console.error(err);
-        g('spinner').classList.remove('active');
-        toast('❌', 'PDF generation failed. Check console.');
-      }
-    }, 100);
-  };
-
-  /* ── EXPORT EXCEL ── */
-  window.exportExcel = function() {
-    if (logData.length === 0) { toast('⚠️', 'No data to export.'); return; }
-    const projName = g('projName').value.trim() || 'HVAC Project';
-    const prepBy   = g('prepBy').value.trim()   || '—';
-    const projDate = g('projDate').value         || new Date().toISOString().slice(0,10);
-    const sheetRef = g('sheetRef').value.trim()  || '—';
-    const genDate  = new Date().toLocaleDateString('en-GB');
-    const wb = XLSX.utils.book_new();
-    const d = [];
-    d.push(['ALKANZ — HVAC DUCT MATERIAL CALCULATION SHEET','','','','','','','','','','','','','']);
-    d.push(['']);
-    d.push(['Project:',projName,'','Drawing Ref:',sheetRef,'','Date:',projDate,'','Prepared By:',prepBy]);
-    d.push(['Generated:',genDate,'','Calibration Base:','52-Sheet / 249.6 m² Supply Duct Job','','','','','','']);
-    d.push(['']);
-    d.push(['No.','Tag Description','Category','Area (m²)','Joint Profile (m)','Chair (pcs)','F-Profile (m)','GI Corner (pcs)','Sliding Ch. (pcs)','PVC Corner (pcs)','Bolts (pcs)','Alum. Tape (Rolls)','Glue (L)','Silicone (pcs)']);
-    logData.forEach((e,i) => {
-      d.push([i+1,e.tag,e.cat,parseFloat(e.sqm),e.joint,e.chair,e.fprof,e.gi,e.sliding,e.pvc,e.bolts,e.tape,e.glue,e.silicone]);
-    });
-    const sum = k => logData.reduce((s,e)=>s+(parseFloat(e[k])||0),0);
-    d.push(['','TOTALS','',sum('sqm'),sum('joint'),sum('chair'),sum('fprof'),sum('gi'),sum('sliding'),sum('pvc'),sum('bolts'),sum('tape'),sum('glue'),sum('silicone')]);
-    const ws1 = XLSX.utils.aoa_to_sheet(d);
-    ws1['!cols'] = [{wch:5},{wch:32},{wch:22},{wch:10},{wch:16},{wch:10},{wch:14},{wch:14},{wch:14},{wch:14},{wch:11},{wch:16},{wch:10},{wch:14}];
-    ws1['!merges'] = [{ s:{r:0,c:0}, e:{r:0,c:13} }];
-    XLSX.utils.book_append_sheet(wb, ws1, 'Detail Log');
-    const dateStr  = new Date().toISOString().slice(0,10);
-    const safeName = projName.replace(/[^a-z0-9]/gi,'_').slice(0,40);
-    XLSX.writeFile(wb, `ALKANZ_HVAC_${safeName}_${dateStr}.xlsx`);
-    toast('📊', 'Excel file exported!');
-  };
-
-  /* LOAD */
-  try {
-    const saved = localStorage.getItem('hvac_alkanz_v1');
-    if (saved) logData = JSON.parse(saved);
-  } catch(_) { logData = []; }
-
-  render(); calculate();
-
-}); // end DOMContentLoaded
+    window.onload = function() {
+        const savedLog = localStorage.getItem('ductLog');
+        if (savedLog) {
+            document.getElementById('logBody').innerHTML = savedLog;
+            recalculateAllTotals(); 
+        }
+    };
 </script>
+
 </body>
 </html>
