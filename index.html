@@ -1,365 +1,809 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HVAC Duct Material Calculator</title>
-    <style>
-        :root {
-            --primary: #2563eb; --primary-hover: #1d4ed8; --bg: #f8fafc;
-            --card-bg: #ffffff; --text: #1e293b; --muted: #64748b;
-            --border: #e2e8f0; --input-manual: #fff9c4; --input-auto: #dcfce7; 
-        }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; }
-        .container { max-width: 1400px; margin: 0 auto; }
-        header { text-align: center; margin-bottom: 30px; }
-        h1 { color: var(--primary); margin-bottom: 5px; }
-        p.subtitle { color: var(--muted); margin-top: 0; }
-        .calculator-card { background: var(--card-bg); padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 30px; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px; }
-        input, select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 16px; box-sizing: border-box; }
-        input:focus, select:focus { outline: none; border-color: var(--primary); }
-        .manual-input { background-color: var(--input-manual); }
-        .auto-input { background-color: var(--input-auto); font-weight: bold; color: #166534; pointer-events: none; }
-        button { background-color: var(--primary); color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 6px; cursor: pointer; font-weight: 600; margin-right: 10px; margin-top: 10px; }
-        button:hover { background-color: var(--primary-hover); }
-        .btn-secondary { background-color: #64748b; } .btn-secondary:hover { background-color: #475569; }
-        .btn-danger { background-color: #ef4444; } .btn-danger:hover { background-color: #dc2626; }
-        .log-section { background: var(--card-bg); padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
-        th, td { padding: 12px; text-align: center; border-bottom: 1px solid var(--border); }
-        th { background-color: #f1f5f9; font-weight: 700; color: var(--muted); text-transform: uppercase; font-size: 12px; }
-        tfoot td { font-weight: 900; background-color: #eff6ff; color: var(--primary); border-top: 3px solid var(--primary); font-size: 15px; }
-        .alert { color: #dc2626; font-weight: bold; font-size: 14px; margin-top: 10px; display: none; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Raw Material Calculator — Prodify</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--sur:#161b22;--sur2:#1c2430;--sur3:#21303f;
+  --bdr:#30363d;--bdr2:#3d4f63;
+  --acc:#e6a817;--acc2:#c48f10;
+  --blue:#388bfd;--grn:#3fb950;--red:#f85149;--pur:#a371f7;
+  --txt:#e6edf3;--txt2:#8b949e;--txt3:#6e7681;
+  --inp:#fffdf2;--inp-b:#d4a017;--r:8px;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);font-size:13px;line-height:1.5;min-height:100vh}
+
+/* TOPBAR */
+.topbar{background:var(--sur);border-bottom:1px solid var(--bdr);height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.tb-brand{display:flex;align-items:center;gap:12px}
+.tb-logo{width:36px;height:36px;background:linear-gradient(135deg,var(--acc),var(--acc2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#1a1208;font-family:'Inter',sans-serif}
+.tb-title{font-size:15px;font-weight:700;letter-spacing:-.2px}
+.tb-sub{font-size:11px;color:var(--txt3);margin-top:1px}
+.tb-clock{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--acc);text-align:right;letter-spacing:.5px}
+.tb-date{font-size:11px;color:var(--txt3);text-align:right;margin-top:1px}
+
+/* LAYOUT */
+.page{max-width:1380px;margin:0 auto;padding:22px 24px 48px}
+.layout{display:grid;grid-template-columns:380px 1fr;gap:18px;align-items:start}
+@media(max-width:1080px){.layout{grid-template-columns:1fr}}
+
+/* PANEL */
+.panel{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.25)}
+.panel+.panel{margin-top:14px}
+.ph{background:var(--sur2);border-bottom:1px solid var(--bdr);padding:10px 18px;display:flex;align-items:center;justify-content:space-between}
+.ph-l{display:flex;align-items:center;gap:9px}
+.ph-ic{width:24px;height:24px;background:var(--sur3);border:1px solid var(--bdr2);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px}
+.ph h3{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--txt2)}
+.pb{padding:18px}
+
+/* FORM */
+.field{margin-bottom:12px}.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--txt3);margin-bottom:5px}
+.field input,.field select{width:100%;padding:8px 11px;border-radius:6px;font-size:13px;font-family:'Inter',sans-serif;transition:border-color .15s,box-shadow .15s;appearance:none;-webkit-appearance:none}
+.field input:focus,.field select:focus{outline:none;box-shadow:0 0 0 3px rgba(230,168,23,.2);border-color:var(--acc)!important}
+.inp-m{background:var(--inp);border:1.5px solid var(--inp-b);color:#1a1208}
+.inp-m::placeholder{color:#b89a4a}
+.inp-auto{background:#f0faf3;border:1.5px solid rgba(63,185,80,.4);color:#166534;font-family:'JetBrains Mono',monospace;font-weight:700;pointer-events:none}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.r3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+/* SECTION LABEL */
+.sec{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--txt3);padding:5px 0 8px;border-bottom:1px solid var(--bdr);margin:16px 0 13px;display:flex;align-items:center;gap:7px}
+.sec::before{content:'';width:3px;height:11px;background:var(--acc);border-radius:2px;flex-shrink:0}
+
+/* RESULT TILES */
+.tiles{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.tile{background:var(--sur2);border:1px solid var(--bdr);border-radius:7px;padding:11px 12px}
+.t-a{border-top:2px solid var(--acc)}.t-b{border-top:2px solid var(--blue)}.t-g{border-top:2px solid var(--grn)}.t-r{border-top:2px solid var(--red)}
+.tile-lbl{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--txt3);margin-bottom:5px}
+.tile-val{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--txt);line-height:1}
+.tile-unit{font-size:10px;color:var(--txt3);margin-top:3px}
+
+/* BUTTONS */
+.btn-row{display:flex;gap:9px;margin-top:14px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:none;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;letter-spacing:.3px;cursor:pointer;transition:all .15s}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--acc);color:#1a1208;flex:1;justify-content:center}
+.btn-primary:hover{background:var(--acc2)}
+.btn-ghost{background:transparent;color:var(--txt2);border:1px solid var(--bdr2)}
+.btn-ghost:hover{background:var(--sur3);color:var(--txt)}
+.btn-pdf{background:rgba(63,185,80,.12);color:var(--grn);border:1px solid rgba(63,185,80,.3);padding:7px 16px;font-size:12px}
+.btn-pdf:hover{background:rgba(63,185,80,.22)}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+@media(max-width:900px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r);padding:14px 16px}
+.kpi-lbl{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--txt3);margin-bottom:6px}
+.kpi-val{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;line-height:1}
+.kpi-unit{font-size:11px;color:var(--txt3);margin-top:3px}
+.cv-a{color:var(--acc)}.cv-b{color:var(--blue)}.cv-g{color:var(--grn)}.cv-r{color:var(--red)}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:680px}
+thead th{background:var(--sur2);padding:9px 10px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--txt3);border-bottom:1px solid var(--bdr2);text-align:center;white-space:nowrap}
+thead th.left{text-align:left}
+tbody tr{border-bottom:1px solid rgba(48,54,61,.8);transition:background .1s}
+tbody tr:nth-child(even){background:rgba(22,27,34,.6)}
+tbody tr:hover{background:var(--sur3)}
+tbody td{padding:8px 10px;text-align:center;color:var(--txt2);vertical-align:middle}
+tbody td.left{text-align:left;font-weight:600;color:var(--txt)}
+.nc{font-family:'JetBrains Mono',monospace;font-size:12px}
+.nch{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--acc)}
+tfoot tr{background:rgba(12,18,26,.85)!important}
+tfoot td{padding:10px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--acc);border-top:2px solid var(--acc);text-align:center}
+tfoot td.lbl{font-family:'Inter',sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--txt3);text-align:right}
+
+/* STATUS BAR */
+.statusbar{background:var(--sur2);border-bottom:1px solid var(--bdr);padding:9px 28px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.spill{display:flex;align-items:center;gap:7px;background:var(--sur3);border:1px solid var(--bdr);border-radius:20px;padding:4px 13px;font-size:11.5px;font-weight:500}
+.spill-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.spill-lbl{color:var(--txt3)}
+.spill-val{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--txt);margin-left:3px}
+.spill-unit{color:var(--txt3);font-size:10px;margin-left:1px}
+
+/* TOOLBAR */
+.toolbar{padding:9px 16px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;background:var(--sur2);flex-wrap:wrap;gap:8px}
+.toolbar-note{font-size:11px;color:var(--txt3)}
+</style>
 </head>
 <body>
 
-<div class="container">
-    <header>
-        <h1>HVAC Raw Material Estimator</h1>
-        <p class="subtitle">Calibrated from official Excel costing data (AK-JD0050 / AK-JD0053)</p>
-    </header>
-
-    <div class="calculator-card">
-        <div class="grid-2">
-            <div>
-                <h3>Project & Area Info</h3>
-                <div class="form-group">
-                    <label>Taglist Description</label>
-                    <input type="text" id="tagDesc" class="manual-input" placeholder="e.g. AK-JD0053">
-                </div>
-                <div class="form-group">
-                    <label>Total Duct Square Meters (Sqm)</label>
-                    <input type="number" id="sqm" class="manual-input" step="0.01" min="0" oninput="calculate()">
-                </div>
-                <div class="form-group">
-                    <label>Panel Waste Factor (Default 1.2 = 20% waste)</label>
-                    <input type="number" id="wasteFactor" class="manual-input" step="0.01" min="1" value="1.20" oninput="calculate()">
-                </div>
-                
-                <h3 style="margin-top: 25px;">Hardware Inputs (From Flange List)</h3>
-                <div class="form-group">
-                    <label>Alu JT / Joint Profile (m)</label>
-                    <input type="number" id="jointProf" class="manual-input" min="0" oninput="calculate()">
-                </div>
-                <div class="form-group">
-                    <label>Alu H Profile (m)</label>
-                    <input type="number" id="hProf" class="manual-input" min="0" oninput="calculate()">
-                </div>
-                <div class="form-group">
-                    <label>Alu U Profile (m)</label>
-                    <input type="number" id="uProf" class="manual-input" min="0" oninput="calculate()">
-                </div>
-                <div class="form-group">
-                    <label>Alu F Profile (m)</label>
-                    <input type="number" id="fProf" class="manual-input" min="0" oninput="calculate()">
-                </div>
-                <div class="form-group">
-                    <label>GI Corner Quantity (Pcs)</label>
-                    <input type="number" id="giCorner" class="manual-input" min="0" oninput="calculate()">
-                </div>
-            </div>
-
-            <div>
-                <h3>Auto-Calculated Quantities</h3>
-                <div class="form-group">
-                    <label>PH Sheet Required (Sqm)</label>
-                    <input type="text" id="phSheet" class="auto-input" readonly value="0">
-                </div>
-                <div class="form-group">
-                    <label>PVC Corner Quantity (Pcs)</label>
-                    <input type="text" id="pvcCorner" class="auto-input" readonly value="0">
-                </div>
-                <div class="form-group">
-                    <label>Sliding Channel (m)</label>
-                    <input type="text" id="slidingCh" class="auto-input" readonly value="0">
-                </div>
-
-                <h3 style="margin-top: 25px;">Adhesives & Sealants</h3>
-                <div class="form-group">
-                    <label>Normal Alu Tape (Rolls) - Ratio: 0.096</label>
-                    <input type="text" id="tapeQty" class="auto-input" readonly value="0">
-                </div>
-                <div class="form-group">
-                    <label>Duct Glue (Liters) - Ratio: 0.08</label>
-                    <input type="text" id="ductGlue" class="auto-input" readonly value="0">
-                </div>
-                <div class="form-group">
-                    <label>Profile Glue (Tubes) - Ratio: 0.01</label>
-                    <input type="text" id="profGlue" class="auto-input" readonly value="0">
-                </div>
-                <div class="form-group">
-                    <label>Silicone Sealant (Tubes) - Ratio: 0.32</label>
-                    <input type="text" id="siliconeQty" class="auto-input" readonly value="0">
-                </div>
-
-                <div id="errorMsg" class="alert">Please enter Tag Description and Sqm!</div>
-                <div style="margin-top: 30px;">
-                    <button onclick="addToLog()">+ Add to Log</button>
-                    <button onclick="clearForm()" class="btn-secondary">Clear Form</button>
-                </div>
-            </div>
-        </div>
+<header class="topbar">
+  <div class="tb-brand">
+    <div class="tb-logo">P</div>
+    <div>
+      <div class="tb-title">Raw Material Calculator</div>
+      <div class="tb-sub">Prodify · Production Simplified · HVAC Phenolic Duct</div>
     </div>
+  </div>
+  <div>
+    <div class="tb-clock" id="clock">--:--:--</div>
+    <div class="tb-date" id="dateline"></div>
+  </div>
+</header>
 
-    <div class="log-section">
-        <h2 style="margin-top:0;">Daily Calculation Log</h2>
-        <p>Keep track of all tags. The bottom row automatically sums your daily material requirements.</p>
-        
-        <button onclick="exportCSV()" class="btn-secondary">Export to Excel (CSV)</button>
-        <button onclick="clearLog()" class="btn-danger">Clear Log</button>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Timestamp</th>
-                    <th>Tag Desc</th>
-                    <th>Duct Sqm</th>
-                    <th>PH Sheet</th>
-                    <th>JT (m)</th>
-                    <th>H (m)</th>
-                    <th>U (m)</th>
-                    <th>F (m)</th>
-                    <th>GI Corner</th>
-                    <th>PVC Corner</th>
-                    <th>Sliding Ch</th>
-                    <th>Tape (Rolls)</th>
-                    <th>Duct Glue (L)</th>
-                    <th>Prof Glue (T)</th>
-                    <th>Silicone (T)</th>
-                </tr>
-            </thead>
-            <tbody id="logBody"></tbody>
-            <tfoot>
-                <tr id="totalRow">
-                    <td></td>
-                    <td style="text-align: right; font-weight: 900;">DAILY TOTALS:</td>
-                    <td id="tot-sqm">0</td>
-                    <td id="tot-ph">0</td>
-                    <td id="tot-jt">0</td>
-                    <td id="tot-h">0</td>
-                    <td id="tot-u">0</td>
-                    <td id="tot-f">0</td>
-                    <td id="tot-gi">0</td>
-                    <td id="tot-pvc">0</td>
-                    <td id="tot-sliding">0</td>
-                    <td id="tot-tape">0</td>
-                    <td id="tot-dglue">0</td>
-                    <td id="tot-pglue">0</td>
-                    <td id="tot-silicone">0</td>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
+<div class="statusbar">
+  <div class="spill"><div class="spill-dot" style="background:var(--acc)"></div><span class="spill-lbl">Duct Glue</span><span class="spill-val" id="st-glue">0</span><span class="spill-unit">Ltr</span></div>
+  <div class="spill"><div class="spill-dot" style="background:var(--blue)"></div><span class="spill-lbl">Profile Glue</span><span class="spill-val" id="st-pglue">0</span><span class="spill-unit">Tubes</span></div>
+  <div class="spill"><div class="spill-dot" style="background:var(--grn)"></div><span class="spill-lbl">Alu Tape</span><span class="spill-val" id="st-tape">0</span><span class="spill-unit">Rolls</span></div>
+  <div class="spill"><div class="spill-dot" style="background:var(--red)"></div><span class="spill-lbl">Silicone</span><span class="spill-val" id="st-sil">0</span><span class="spill-unit">Tubes</span></div>
+  <div class="spill"><div class="spill-dot" style="background:var(--pur)"></div><span class="spill-lbl">Total Sqm</span><span class="spill-val" id="st-sqm">0</span><span class="spill-unit">m²</span></div>
 </div>
 
-<script>
-    // Exact Ratios extracted from the provided Excel Sheet (Sheet2, 3, 4)
-    const ratios = {
-        tape: 0.096,      // Rolls per Sqm
-        ductGlue: 0.08,   // Liters per Sqm
-        profGlue: 0.01,   // Tubes per Sqm
-        silicone: 0.32    // Tubes per Sqm
-    };
+<main class="page">
+<div class="layout">
 
-    const totalIds = [
-        'tot-sqm', 'tot-ph', 'tot-jt', 'tot-h', 'tot-u', 'tot-f', 
-        'tot-gi', 'tot-pvc', 'tot-sliding', 'tot-tape', 'tot-dglue', 'tot-pglue', 'tot-silicone'
+<!-- ── LEFT COLUMN ── -->
+<div>
+  <!-- Project Info -->
+  <div class="panel">
+    <div class="ph"><div class="ph-l"><div class="ph-ic">📁</div><h3>Project Info</h3></div></div>
+    <div class="pb">
+      <div class="r2">
+        <div class="field"><label>Customer</label><input type="text" id="customer" class="inp-m" placeholder="e.g. IECO" value="IECO"></div>
+        <div class="field"><label>Project No.</label><input type="text" id="project" class="inp-m" placeholder="e.g. AK-JD0050"></div>
+      </div>
+      <div class="r2">
+        <div class="field"><label>Date</label><input type="date" id="projDate" class="inp-m"></div>
+        <div class="field"><label>Prepared By</label><input type="text" id="prepBy" class="inp-m" placeholder="Engineer name"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inputs -->
+  <div class="panel">
+    <div class="ph"><div class="ph-l"><div class="ph-ic">⚙️</div><h3>Material Quantities</h3></div></div>
+    <div class="pb">
+
+      <div class="sec">Area Input</div>
+      <div class="field">
+        <label>Total Area — Tqty (m²)</label>
+        <input type="number" id="tqty" class="inp-m" step="0.01" min="0" placeholder="e.g. 90.23" oninput="calculate()">
+      </div>
+
+      <div class="sec">Auto-Calculated from Area</div>
+      <div class="r2">
+        <div class="field">
+          <label>Duct Glue (Ltr) — Tqty × 12/150</label>
+          <input type="text" id="out-glue" class="inp-auto" readonly value="0">
+        </div>
+        <div class="field">
+          <label>Profile Glue (Tubes) — Tqty × 1/100</label>
+          <input type="text" id="out-pglue" class="inp-auto" readonly value="0">
+        </div>
+      </div>
+      <div class="r2">
+        <div class="field">
+          <label>Normal Alu Tape (Rolls) — Tqty × 24/250</label>
+          <input type="text" id="out-tape" class="inp-auto" readonly value="0">
+        </div>
+        <div class="field">
+          <label>Silicone (Tubes) — Tqty × 24/75</label>
+          <input type="text" id="out-sil" class="inp-auto" readonly value="0">
+        </div>
+      </div>
+
+      <div class="sec">Flanges — Manual Entry</div>
+      <div class="r2">
+        <div class="field"><label>Alu JT (Mtr)</label><input type="number" id="aluJT" class="inp-m" min="0" placeholder="0" oninput="calculate()"></div>
+        <div class="field"><label>Alu H (Mtr)</label><input type="number" id="aluH" class="inp-m" min="0" placeholder="0" oninput="calculate()"></div>
+      </div>
+      <div class="r2">
+        <div class="field"><label>Alu U (Mtr)</label><input type="number" id="aluU" class="inp-m" min="0" placeholder="0" oninput="calculate()"></div>
+        <div class="field"><label>Alu F (Mtr)</label><input type="number" id="aluF" class="inp-m" min="0" placeholder="0" oninput="calculate()"></div>
+      </div>
+
+      <div class="sec">Fixing & Support — Manual Entry</div>
+      <div class="r2">
+        <div class="field"><label>GI Corner (Pcs)</label><input type="number" id="giCorner" class="inp-m" min="0" placeholder="0" oninput="calculate()"></div>
+        <div class="field"><label>Silicone Override (Tubes)</label><input type="number" id="silOverride" class="inp-m" min="0" placeholder="leave blank = auto" oninput="calculate()"></div>
+      </div>
+      <div class="r2">
+        <div class="field"><label>Reinf. Rod (Mtr)</label><input type="number" id="reinfRod" class="inp-m" min="0" placeholder="0" oninput="calculate()"></div>
+        <div class="field"><label>Reinf. Screw (Pcs)</label><input type="number" id="reinfScrew" class="inp-m" min="0" placeholder="0" oninput="calculate()"></div>
+      </div>
+
+      <div class="sec">Costs</div>
+      <div class="r3">
+        <div class="field"><label>Transport (AED)</label><input type="number" id="transport" class="inp-m" step="0.01" value="75" oninput="calculate()"></div>
+        <div class="field"><label>Labor (AED)</label><input type="number" id="labor" class="inp-m" step="0.01" value="80" oninput="calculate()"></div>
+        <div class="field"><label>PO Price (AED)</label><input type="number" id="poPrice" class="inp-m" step="0.01" placeholder="0" oninput="calculate()"></div>
+      </div>
+
+      <div id="errMsg" style="display:none;background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.35);color:#ff9492;border-radius:6px;padding:9px 13px;font-size:12px;margin-top:12px">
+        ⚠ Enter Total Area (Tqty) to calculate.
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="calculate()">Calculate</button>
+        <button class="btn btn-ghost" onclick="clearForm()">Clear</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── RIGHT COLUMN ── -->
+<div>
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="kpi-lbl">Duct Glue</div>
+      <div class="kpi-val cv-a" id="kpi-glue">0</div>
+      <div class="kpi-unit">Litres (Tqty × 12/150)</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Alu Tape</div>
+      <div class="kpi-val cv-b" id="kpi-tape">0</div>
+      <div class="kpi-unit">Rolls (Tqty × 24/250)</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Silicone</div>
+      <div class="kpi-val cv-g" id="kpi-sil">0</div>
+      <div class="kpi-unit">Tubes (Tqty × 24/75)</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Margin</div>
+      <div class="kpi-val" id="kpi-margin" style="color:var(--txt)">—</div>
+      <div class="kpi-unit">vs PO Price</div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="panel">
+    <div class="ph">
+      <div class="ph-l"><div class="ph-ic">📋</div><h3>Material Requirement Summary</h3></div>
+      <button class="btn btn-pdf" onclick="exportPDF()">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M7.25 7.689V2a.75.75 0 0 1 1.5 0v5.689l1.97-1.97a.749.749 0 1 1 1.06 1.06l-3.25 3.25a.749.749 0 0 1-1.06 0L4.22 6.779a.749.749 0 1 1 1.06-1.06l1.97 1.97Z"/></svg>
+        Export PDF
+      </button>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:32px">#</th>
+            <th style="width:72px">Category</th>
+            <th class="left" style="min-width:150px">Material</th>
+            <th style="width:42px">Unit</th>
+            <th style="width:90px">Qty / m² Formula</th>
+            <th style="width:90px">Quantity</th>
+          </tr>
+        </thead>
+        <tbody id="matBody">
+          <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--txt3);font-size:12px">Enter Total Area and click Calculate</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Cost Summary -->
+    <div style="padding:16px 18px;border-top:1px solid var(--bdr)">
+      <div class="sec" style="margin-top:0">Cost Summary</div>
+      <div class="tiles">
+        <div class="tile t-a"><div class="tile-lbl">Transport</div><div class="tile-val" id="s-transport">—</div><div class="tile-unit">AED</div></div>
+        <div class="tile t-b"><div class="tile-lbl">Labor</div><div class="tile-val" id="s-labor">—</div><div class="tile-unit">AED</div></div>
+        <div class="tile t-g"><div class="tile-lbl">PO Price</div><div class="tile-val" id="s-po">—</div><div class="tile-unit">AED</div></div>
+        <div class="tile t-g"><div class="tile-lbl">Difference</div><div class="tile-val" id="s-diff" style="font-size:16px">—</div><div class="tile-unit">AED</div></div>
+        <div class="tile t-a"><div class="tile-lbl">Margin</div><div class="tile-val" id="s-margin" style="font-size:16px">—</div><div class="tile-unit">%</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+  // ── CLOCK ──
+  function tick(){
+    const now = new Date();
+    document.getElementById('clock').textContent = now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    document.getElementById('dateline').textContent = now.toLocaleDateString([],{weekday:'long',year:'numeric',month:'short',day:'numeric'});
+  }
+  setInterval(tick,1000); tick();
+  document.getElementById('projDate').value = new Date().toISOString().slice(0,10);
+
+  function g(id){ return document.getElementById(id); }
+  function n(id){ return Math.max(0, parseFloat(g(id).value) || 0); }
+  function fmt(v, d=2){ return parseFloat(v).toFixed(d); }
+
+  // ── MATERIAL ROWS definition (no prices, quantities only) ──
+  // Equations extracted directly from Excel:
+  //   Duct Glue:    Tqty × (12/150)    → G5 = =12/150
+  //   Profile Glue: Tqty × (1/100)     → G6 = =1/100
+  //   Alu Tape:     Tqty × (24/250)    → G7 = =24/250
+  //   Silicone:     Tqty × (24/75)     → G12 = =24/75
+  //   PVC Corner:   skipped (user requested)
+  //   Sliding Ch.:  skipped (user requested)
+
+  const CATEGORY_COLORS = {
+    'Panel':'#388bfd','Adhesive':'#a371f7','Taping':'#e6a817',
+    'Flange':'#3fb950','Sealant':'#f85149','Corner':'#f0883e',
+    'Support':'#8b949e'
+  };
+
+  window.calculate = function(){
+    const tqty = n('tqty');
+    if(tqty <= 0){
+      g('errMsg').style.display = 'block';
+      return;
+    }
+    g('errMsg').style.display = 'none';
+
+    // ── AUTO QUANTITIES (from Excel formulas) ──
+    const ductGlue    = tqty * (12/150);   // =Tqty*G5  where G5=12/150
+    const profileGlue = tqty * (1/100);    // =Tqty*G6  where G6=1/100
+    const aluTape     = tqty * (24/250);   // =Tqty*G7  where G7=24/250
+    // Silicone: use override if given, else auto = Tqty × 24/75
+    const silAuto     = tqty * (24/75);    // =Tqty*G12 where G12=24/75
+    const silicone    = n('silOverride') > 0 ? n('silOverride') : silAuto;
+
+    // ── MANUAL QUANTITIES ──
+    const aluJT       = n('aluJT');
+    const aluH        = n('aluH');
+    const aluU        = n('aluU');
+    const aluF        = n('aluF');
+    const giCorner    = n('giCorner');
+    const reinfRod    = n('reinfRod');
+    const reinfScrew  = n('reinfScrew');
+
+    // Update auto fields
+    g('out-glue').value  = fmt(ductGlue,3);
+    g('out-pglue').value = fmt(profileGlue,3);
+    g('out-tape').value  = fmt(aluTape,3);
+    g('out-sil').value   = fmt(silicone,3);
+
+    // Status bar
+    g('st-glue').textContent  = fmt(ductGlue,2);
+    g('st-pglue').textContent = fmt(profileGlue,2);
+    g('st-tape').textContent  = fmt(aluTape,2);
+    g('st-sil').textContent   = fmt(silicone,2);
+    g('st-sqm').textContent   = fmt(tqty,2);
+
+    // KPIs
+    g('kpi-glue').textContent = fmt(ductGlue,2);
+    g('kpi-tape').textContent = fmt(aluTape,2);
+    g('kpi-sil').textContent  = fmt(silicone,2);
+
+    // ── BUILD TABLE ROWS ──
+    const rows = [
+      { sl:1,  cat:'Panel',    mat:'PH Sheet',              unit:'Sqm',  formula:'Manual',              qty: tqty        },
+      { sl:2,  cat:'Adhesive', mat:'Duct Glue',             unit:'Ltr',  formula:'Tqty × 12/150',       qty: ductGlue    },
+      { sl:3,  cat:'Adhesive', mat:'Profile Glue',          unit:'Tube', formula:'Tqty × 1/100',        qty: profileGlue },
+      { sl:4,  cat:'Taping',   mat:'Normal Alu Tape',       unit:'Roll', formula:'Tqty × 24/250',       qty: aluTape     },
+      { sl:5,  cat:'Flange',   mat:'Alu JT',                unit:'Mtr',  formula:'Manual',              qty: aluJT       },
+      { sl:6,  cat:'Flange',   mat:'Alu H',                 unit:'Mtr',  formula:'Manual',              qty: aluH        },
+      { sl:7,  cat:'Flange',   mat:'Alu U',                 unit:'Mtr',  formula:'Manual',              qty: aluU        },
+      { sl:8,  cat:'Flange',   mat:'Alu F',                 unit:'Mtr',  formula:'Manual',              qty: aluF        },
+      { sl:9,  cat:'Sealant',  mat:'Silicone',              unit:'Tube', formula:'Tqty × 24/75',        qty: silicone    },
+      { sl:10, cat:'Corner',   mat:'GI Corner',             unit:'Pcs',  formula:'Manual',              qty: giCorner    },
+      { sl:13, cat:'Support',  mat:'Reinforcement Rod',     unit:'Mtr',  formula:'Manual',              qty: reinfRod    },
+      { sl:14, cat:'Support',  mat:'Reinforcement Screw',   unit:'Pcs',  formula:'Manual',              qty: reinfScrew  },
     ];
 
-    function calculate() {
-        const sqm = Math.max(0, parseFloat(document.getElementById('sqm').value) || 0);
-        const wasteFactor = Math.max(1, parseFloat(document.getElementById('wasteFactor').value) || 1.2);
-        const jointProf = Math.max(0, parseFloat(document.getElementById('jointProf').value) || 0);
-        const giCorner = Math.max(0, parseFloat(document.getElementById('giCorner').value) || 0);
+    g('matBody').innerHTML = rows.map((r,i) => {
+      const col = CATEGORY_COLORS[r.cat] || '#8b949e';
+      const isAuto = r.formula !== 'Manual';
+      return `<tr>
+        <td class="nc" style="color:var(--txt3)">${r.sl}</td>
+        <td><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:600;background:${col}22;color:${col};border:1px solid ${col}44">${r.cat}</span></td>
+        <td class="left">${r.mat}</td>
+        <td style="color:var(--txt3)">${r.unit}</td>
+        <td style="font-size:10px;color:${isAuto?'#3fb950':'var(--txt3)'};">${r.formula}</td>
+        <td class="${isAuto?'nch':'nc'}">${r.qty > 0 ? fmt(r.qty, r.unit==='Pcs'?0:3) : '—'}</td>
+      </tr>`;
+    }).join('');
 
-        // 1. Panel Calculation
-        const phSheet = Math.round(sqm * wasteFactor * 100) / 100;
+    // ── COST SUMMARY ──
+    const transport = n('transport');
+    const labor     = n('labor');
+    const poPrice   = n('poPrice');
+    const totalCost = transport + labor;
+    const diff      = poPrice > 0 ? poPrice - totalCost : null;
+    // Margin = ((total/PO)-1)*-1   →  from Excel: I24 = SUM((((I21/I22)-1))*-1)
+    const margin    = (poPrice > 0 && totalCost > 0) ? (((totalCost / poPrice) - 1) * -1) : null;
 
-        // 2. Hardware Calculations
-        const pvcCorner = Math.ceil(giCorner / 2);
-        const slidingCh = Math.ceil(jointProf / 8);
+    g('s-transport').textContent = fmt(transport);
+    g('s-labor').textContent     = fmt(labor);
+    g('s-po').textContent        = poPrice > 0 ? fmt(poPrice) : '—';
+    g('s-diff').textContent      = diff !== null ? fmt(diff) : '—';
+    g('s-diff').style.color      = diff !== null ? (diff >= 0 ? '#3fb950' : '#f85149') : 'var(--txt)';
+    g('s-margin').textContent    = margin !== null ? (margin*100).toFixed(2)+'%' : '—';
+    g('s-margin').style.color    = margin !== null ? (margin >= 0 ? '#3fb950' : '#f85149') : 'var(--txt)';
 
-        // 3. Consumable Calculations based on Excel Ratios
-        let tape = 0, ductGlue = 0, profGlue = 0, silicone = 0;
-        if (sqm > 0) {
-            tape = Math.ceil(sqm * ratios.tape); 
-            ductGlue = Math.round(sqm * ratios.ductGlue * 100) / 100; 
-            profGlue = Math.ceil(sqm * ratios.profGlue); 
-            silicone = Math.ceil(sqm * ratios.silicone); 
-        }
+    const mText = margin !== null ? (margin>=0?'+':'')+(margin*100).toFixed(2)+'%' : '—';
+    g('kpi-margin').textContent = mText;
+    g('kpi-margin').className   = 'kpi-val '+(margin===null?'':(margin>=0?'cv-g':'cv-r'));
 
-        // Output to Auto-Calculated Fields
-        document.getElementById('phSheet').value = phSheet;
-        document.getElementById('pvcCorner').value = pvcCorner;
-        document.getElementById('slidingCh').value = slidingCh;
-        document.getElementById('tapeQty').value = tape;
-        document.getElementById('ductGlue').value = ductGlue;
-        document.getElementById('profGlue').value = profGlue;
-        document.getElementById('siliconeQty').value = silicone;
-    }
-
-    function addToLog() {
-        const tagDesc = document.getElementById('tagDesc').value.trim();
-        const sqm = document.getElementById('sqm').value;
-        
-        if (!tagDesc || !sqm || parseFloat(sqm) <= 0) {
-            document.getElementById('errorMsg').style.display = 'block';
-            return;
-        }
-        document.getElementById('errorMsg').style.display = 'none';
-
-        const now = new Date();
-        const timestamp = now.toLocaleDateString() + " " + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        
-        const rowData = [
-            timestamp,
-            tagDesc,
-            sqm,
-            document.getElementById('phSheet').value,
-            document.getElementById('jointProf').value || 0,
-            document.getElementById('hProf').value || 0,
-            document.getElementById('uProf').value || 0,
-            document.getElementById('fProf').value || 0,
-            document.getElementById('giCorner').value || 0,
-            document.getElementById('pvcCorner').value,
-            document.getElementById('slidingCh').value,
-            document.getElementById('tapeQty').value,
-            document.getElementById('ductGlue').value,
-            document.getElementById('profGlue').value,
-            document.getElementById('siliconeQty').value
-        ];
-
-        const tbody = document.getElementById('logBody');
-        const row = document.createElement('tr');
-
-        rowData.forEach(data => {
-            const td = document.createElement('td');
-            td.textContent = data;
-            row.appendChild(td);
-        });
-
-        tbody.appendChild(row);
-        updateTotalsFromRow(row); 
-        saveLog(); 
-        clearForm(); 
-    }
-
-    function updateTotalsFromRow(row) {
-        const cells = row.querySelectorAll('td');
-        let totalIdx = 0;
-        
-        // Start at index 2 to skip Timestamp and Tag Desc
-        for (let i = 2; i < cells.length; i++) {
-            const totElement = document.getElementById(totalIds[totalIdx]);
-            let currentTotal = parseFloat(totElement.textContent) || 0;
-            let cellValue = parseFloat(cells[i].textContent) || 0;
-            let newTotal = currentTotal + cellValue;
-
-            // Formatting rules for specific columns
-            if (totalIds[totalIdx] === 'tot-sqm' || totalIds[totalIdx] === 'tot-ph') {
-                totElement.textContent = newTotal.toFixed(2);
-            } else if (totalIds[totalIdx] === 'tot-dglue') {
-                totElement.textContent = newTotal.toFixed(2); // 2 decimals for liters
-            } else {
-                totElement.textContent = Math.round(newTotal);
-            }
-            totalIdx++;
-        }
-    }
-
-    function recalculateAllTotals() {
-        totalIds.forEach(id => document.getElementById(id).textContent = '0'); 
-        const rows = document.getElementById('logBody').querySelectorAll('tr');
-        rows.forEach(row => updateTotalsFromRow(row));
-    }
-
-    function clearForm() {
-        document.getElementById('tagDesc').value = '';
-        document.getElementById('sqm').value = '';
-        document.getElementById('jointProf').value = '';
-        document.getElementById('hProf').value = '';
-        document.getElementById('uProf').value = '';
-        document.getElementById('fProf').value = '';
-        document.getElementById('giCorner').value = '';
-        calculate(); 
-    }
-
-    function exportCSV() {
-        const rows = document.querySelectorAll('table tr'); 
-        let csv = [];
-
-        rows.forEach(row => {
-            const cols = row.querySelectorAll('td, th');
-            const rowData = [];
-            cols.forEach(col => {
-                let data = col.textContent.trim().replace(/"/g, '""');
-                if (data !== '' && !isNaN(data)) {
-                    rowData.push(data);
-                } else {
-                    rowData.push('"' + data + '"');
-                }
-            });
-            csv.push(rowData.join(','));
-        });
-
-        const blob = new Blob(["\uFEFF" + csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.setAttribute('hidden', '');
-        a.setAttribute('href', url);
-        const dateStr = new Date().toISOString().slice(0, 10);
-        a.setAttribute('download', `duct_material_log_${dateStr}.csv`);
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    }
-
-    function clearLog() {
-        if(confirm("Are you sure you want to clear the entire daily log?")) {
-            document.getElementById('logBody').innerHTML = '';
-            recalculateAllTotals(); 
-            localStorage.removeItem('ductLog');
-        }
-    }
-
-    function saveLog() {
-        const logBody = document.getElementById('logBody').innerHTML;
-        localStorage.setItem('ductLog', logBody);
-    }
-
-    window.onload = function() {
-        const savedLog = localStorage.getItem('ductLog');
-        if (savedLog) {
-            document.getElementById('logBody').innerHTML = savedLog;
-            recalculateAllTotals(); 
-        }
+    // Store for PDF
+    window._data = {
+      rows, tqty, ductGlue, profileGlue, aluTape, silicone,
+      transport, labor, poPrice, totalCost, diff, margin,
+      customer: g('customer').value, project: g('project').value,
+      date: g('projDate').value, prepBy: g('prepBy').value
     };
-</script>
+  };
 
+  // ── CLEAR ──
+  window.clearForm = function(){
+    ['tqty','aluJT','aluH','aluU','aluF','giCorner','silOverride','reinfRod','reinfScrew','poPrice']
+      .forEach(id => { g(id).value = ''; });
+    ['out-glue','out-pglue','out-tape','out-sil'].forEach(id => { g(id).value = '0'; });
+    g('transport').value = '75'; g('labor').value = '80';
+    g('matBody').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--txt3);font-size:12px">Enter Total Area and click Calculate</td></tr>';
+    g('errMsg').style.display = 'none';
+    ['kpi-glue','kpi-tape','kpi-sil'].forEach(id => { g(id).textContent = '0'; });
+    g('kpi-margin').textContent = '—'; g('kpi-margin').className = 'kpi-val';
+    ['s-transport','s-labor','s-po','s-diff','s-margin'].forEach(id => { g(id).textContent = '—'; g(id).style.color = 'var(--txt)'; });
+    ['st-glue','st-pglue','st-tape','st-sil','st-sqm'].forEach(id => { g(id).textContent = '0'; });
+    window._data = null;
+  };
+
+  // ── EXPORT PDF ──
+  window.exportPDF = function(){
+    const d = window._data;
+    if(!d){ alert('Please calculate first.'); return; }
+
+    const genDate = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
+    const genTime = new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    const mSign   = d.margin !== null ? (d.margin >= 0 ? '+' : '') : '';
+    const mVal    = d.margin !== null ? (d.margin*100).toFixed(2)+'%' : '—';
+    const mColor  = d.margin !== null ? (d.margin >= 0 ? '#14532d' : '#7f1d1d') : '#000';
+    const dColor  = d.diff   !== null ? (d.diff   >= 0 ? '#14532d' : '#7f1d1d') : '#000';
+
+    const tableRows = d.rows.map((r,i) => {
+      const bg = i%2===0 ? '#ffffff' : '#f5f5f5';
+      const isAuto = r.formula !== 'Manual';
+      const qtyDisplay = r.qty > 0
+        ? parseFloat(r.qty).toFixed(r.unit==='Pcs'?0:3)
+        : '—';
+      return `<tr style="background:${bg}">
+        <td style="text-align:center;color:#666;width:28px">${r.sl}</td>
+        <td style="text-align:center;width:70px">${r.cat}</td>
+        <td style="text-align:left;font-weight:600;color:#000"><b>${r.mat}</b></td>
+        <td style="text-align:center;width:38px">${r.unit}</td>
+        <td style="text-align:center;width:100px;font-size:7.5pt;color:${isAuto?'#14532d':'#555'}">${r.formula}</td>
+        <td style="text-align:right;font-weight:700;color:#000;width:70px">${qtyDisplay}</td>
+      </tr>`;
+    }).join('');
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Material Requirement — ${d.project||'Report'}</title>
+<style>
+  /* ── PAGE ── */
+  @page {
+    size: A4;
+    margin: 16mm 14mm 20mm 14mm;
+  }
+
+  /* ── BASE: force white + black everywhere ── */
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0; padding: 0;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 9pt;
+    line-height: 1.45;
+  }
+
+  /* ── WATERMARK ── */
+  .watermark {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(-35deg);
+    font-size: 62pt;
+    font-weight: 900;
+    font-family: Arial, Helvetica, sans-serif;
+    color: rgba(0,0,0,0.045);
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 0;
+    user-select: none;
+  }
+
+  /* ── CONTENT sits above watermark ── */
+  .content { position: relative; z-index: 1; }
+
+  /* ── DOCUMENT HEADER ── */
+  .doc-header {
+    border: 2px solid #000;
+    border-radius: 3px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+  .doc-header-top {
+    padding: 10px 13px 9px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1.5px solid #000;
+  }
+  .brand-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 3px;
+  }
+  .brand-logo {
+    width: 28px; height: 28px;
+    background: #000;
+    border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 14pt; font-weight: 900;
+    flex-shrink: 0;
+  }
+  .brand-name { font-size: 11pt; font-weight: 700; color: #000; letter-spacing: .3px; }
+  .doc-title  { font-size: 13pt; font-weight: 700; color: #000; margin-bottom: 2px; }
+  .doc-sub    { font-size: 8pt;  color: #444; }
+  .doc-meta-right { text-align: right; font-size: 8pt; color: #000; }
+  .doc-meta-right b { font-size: 9.5pt; }
+
+  /* ── META TABLE ── */
+  .meta-table { width: 100%; border-collapse: collapse; }
+  .meta-table td {
+    padding: 5px 10px;
+    border-right: 1px solid #ccc;
+    font-size: 8pt;
+    vertical-align: top;
+  }
+  .meta-table td:last-child { border-right: none; }
+  .meta-lbl { font-size: 7pt; text-transform: uppercase; letter-spacing: .5px; color: #666; margin-bottom: 2px; }
+  .meta-val  { font-weight: 700; color: #000; font-size: 8.5pt; }
+
+  /* ── SECTION HEADING ── */
+  .sec-head {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 8.5pt; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px;
+    color: #000;
+    border-bottom: 2px solid #000;
+    padding-bottom: 3px;
+    margin: 11px 0 5px;
+  }
+  .sec-num {
+    background: #000; color: #fff;
+    width: 16px; height: 16px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 7.5pt; font-weight: 700; flex-shrink: 0;
+  }
+
+  /* ── MAIN TABLE ── */
+  .mat-table { width: 100%; border-collapse: collapse; font-size: 8.5pt; margin-bottom: 4px; }
+  .mat-table thead th {
+    background: #000 !important;
+    color: #fff !important;
+    padding: 6px 8px;
+    font-weight: 700; font-size: 8pt;
+    text-align: center;
+    border: 1px solid #000;
+    white-space: nowrap;
+  }
+  .mat-table thead th.left { text-align: left; }
+  .mat-table thead th.right { text-align: right; }
+  .mat-table tbody td {
+    padding: 5px 8px;
+    border: 1px solid #d0d0d0;
+    color: #000;
+    vertical-align: middle;
+  }
+
+  /* ── FORMULA NOTE BOX ── */
+  .formula-note {
+    font-size: 7.5pt; color: #333;
+    background: #f5f5f5 !important;
+    border: 1px solid #ccc;
+    border-left: 3px solid #000;
+    padding: 6px 10px;
+    margin: 5px 0 10px;
+    border-radius: 2px;
+    line-height: 1.6;
+  }
+
+  /* ── COST SUMMARY TABLE ── */
+  .cost-table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+  .cost-table td { padding: 6px 10px; border: 1px solid #d0d0d0; color: #000; }
+  .cost-table .c-label { font-weight: 600; width: 45%; }
+  .cost-table .c-value { font-weight: 700; text-align: right; width: 25%; font-size: 9.5pt; }
+  .cost-table .c-note  { font-size: 7.5pt; color: #555; width: 30%; }
+  .cost-table tr.row-even { background: #f5f5f5 !important; }
+  .cost-table tr.row-total td { background: #e0e0e0 !important; font-size: 10pt; font-weight: 700; border-top: 2px solid #000; border-bottom: 2px solid #000; }
+  .cost-table tr.row-margin td { background: #eeeeee !important; border-top: 2px solid #000; }
+
+  /* ── SIGNATURE & FOOTER ── */
+  .sig-section {
+    margin-top: 18px;
+    display: flex;
+    gap: 16px;
+  }
+  .sig-box {
+    flex: 1;
+    border-top: 1.5px solid #000;
+    padding-top: 5px;
+  }
+  .sig-name  { font-size: 8.5pt; font-weight: 700; color: #000; }
+  .sig-label { font-size: 7.5pt; color: #555; margin-top: 2px; }
+  .sig-line  {
+    margin-top: 18px;
+    border-bottom: 1px solid #000;
+    height: 18px;
+  }
+  .sig-line-label { font-size: 7pt; color: #888; margin-top: 3px; }
+
+  .doc-footer {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    padding: 6px 14mm;
+    border-top: 1px solid #ccc;
+    display: flex;
+    justify-content: space-between;
+    font-size: 7pt;
+    color: #666;
+    background: #fff !important;
+  }
+  .footer-brand { font-weight: 700; color: #000; }
+
+  /* ── PRINT OVERRIDES ── */
+  @media print {
+    html, body                { background: #ffffff !important; color: #000 !important; }
+    .watermark                { color: rgba(0,0,0,0.045) !important; }
+    .mat-table thead th       { background: #000 !important; color: #fff !important; }
+    .cost-table tr.row-total td { background: #e0e0e0 !important; }
+    .cost-table tr.row-margin td { background: #eeeeee !important; }
+    .formula-note             { background: #f5f5f5 !important; }
+    .doc-footer               { background: #fff !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- WATERMARK -->
+<div class="watermark">PRODIFY</div>
+
+<div class="content">
+
+  <!-- ── DOCUMENT HEADER ── -->
+  <div class="doc-header">
+    <div class="doc-header-top">
+      <div>
+        <div class="brand-row">
+          <div class="brand-logo">P</div>
+          <div class="brand-name">Prodify</div>
+        </div>
+        <div class="doc-title">MATERIAL REQUIREMENT SHEET</div>
+        <div class="doc-sub">HVAC Phenolic Duct Project &mdash; Raw Material Calculation</div>
+      </div>
+      <div class="doc-meta-right">
+        <div><b>${genDate}</b></div>
+        <div style="margin-top:2px;font-size:7.5pt;color:#555">${genTime}</div>
+        <div style="margin-top:4px;font-size:7pt;color:#888;letter-spacing:.5px;text-transform:uppercase">Production Simplified</div>
+      </div>
+    </div>
+    <table class="meta-table">
+      <tr>
+        <td><div class="meta-lbl">Customer</div><div class="meta-val">${d.customer||'—'}</div></td>
+        <td><div class="meta-lbl">Project No.</div><div class="meta-val">${d.project||'—'}</div></td>
+        <td><div class="meta-lbl">Date</div><div class="meta-val">${d.date||genDate}</div></td>
+        <td><div class="meta-lbl">Total Area (Tqty)</div><div class="meta-val">${parseFloat(d.tqty).toFixed(2)} m²</div></td>
+        <td><div class="meta-lbl">Prepared By</div><div class="meta-val">${d.prepBy||'—'}</div></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ── SECTION 1: MATERIAL REQUIREMENT ── -->
+  <div class="sec-head"><span class="sec-num">1</span>Material Requirement</div>
+
+  <table class="mat-table">
+    <thead>
+      <tr>
+        <th style="width:28px">#</th>
+        <th style="width:68px">Category</th>
+        <th class="left">Material</th>
+        <th style="width:40px">Unit</th>
+        <th style="width:110px">Formula / Basis</th>
+        <th class="right" style="width:70px">Quantity</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${tableRows}
+    </tbody>
+  </table>
+
+  <div class="formula-note">
+    <b>Auto-Calculated Formulas (from project data):</b><br>
+    Duct Glue = Tqty &times; (12 &divide; 150) &emsp;&bull;&emsp;
+    Profile Glue = Tqty &times; (1 &divide; 100) &emsp;&bull;&emsp;
+    Normal Alu Tape = Tqty &times; (24 &divide; 250) &emsp;&bull;&emsp;
+    Silicone = Tqty &times; (24 &divide; 75)
+    &emsp;&emsp;<b>Note:</b> PVC Corner &amp; Sliding Channel quantities excluded per project scope.
+  </div>
+
+  <!-- ── SECTION 2: COST SUMMARY ── -->
+  <div class="sec-head"><span class="sec-num">2</span>Cost Summary</div>
+
+  <table class="cost-table">
+    <tbody>
+      <tr><td class="c-label">Transportation</td><td class="c-value">AED ${parseFloat(d.transport).toFixed(2)}</td><td class="c-note">Logistics &amp; delivery</td></tr>
+      <tr class="row-even"><td class="c-label">Labor Cost</td><td class="c-value">AED ${parseFloat(d.labor).toFixed(2)}</td><td class="c-note">Direct labor for this project</td></tr>
+      <tr class="row-total">
+        <td class="c-label" style="font-size:10pt">TOTAL PROJECT COST</td>
+        <td class="c-value" style="font-size:11pt">AED ${parseFloat(d.totalCost).toFixed(2)}</td>
+        <td class="c-note">Transport + Labor</td>
+      </tr>
+      <tr><td class="c-label">PO Price (Contract Value)</td>
+        <td class="c-value">${d.poPrice>0?'AED '+parseFloat(d.poPrice).toFixed(2):'Not Set'}</td>
+        <td class="c-note">Price agreed in Purchase Order</td></tr>
+      <tr class="row-even">
+        <td class="c-label">Difference &nbsp;<span style="font-weight:400;font-size:7.5pt;color:#555">(PO Price &minus; Total Cost)</span></td>
+        <td class="c-value" style="color:${dColor}">${d.diff!==null?'AED '+parseFloat(d.diff).toFixed(2):'—'}</td>
+        <td class="c-note">Positive = profitable</td>
+      </tr>
+      <tr class="row-margin">
+        <td class="c-label">Margin &nbsp;<span style="font-weight:400;font-size:7.5pt;color:#555">= ((Total &divide; PO) &minus; 1) &times; &minus;1</span></td>
+        <td class="c-value" style="font-size:11pt;color:${mColor}">${mSign}${mVal}</td>
+        <td class="c-note">Project profitability ratio</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ── SIGNATURE SECTION ── -->
+  <div class="sig-section">
+    <div class="sig-box">
+      <div class="sig-name">${d.prepBy || '—'}</div>
+      <div class="sig-label">Prepared By</div>
+      <div class="sig-line"></div>
+      <div class="sig-line-label">Signature</div>
+    </div>
+    <div class="sig-box">
+      <div class="sig-name">&nbsp;</div>
+      <div class="sig-label">Checked By</div>
+      <div class="sig-line"></div>
+      <div class="sig-line-label">Signature</div>
+    </div>
+    <div class="sig-box">
+      <div class="sig-name">&nbsp;</div>
+      <div class="sig-label">Approved By</div>
+      <div class="sig-line"></div>
+      <div class="sig-line-label">Signature</div>
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<!-- ── FOOTER ── -->
+<div class="doc-footer">
+  <span>Made with <span class="footer-brand">Prodify</span> &mdash; Production Simplified &nbsp;|&nbsp; ${d.customer||''} &nbsp;/&nbsp; ${d.project||''}</span>
+  <span>Generated: ${genDate} ${genTime} &nbsp;|&nbsp; Page 1 of 1</span>
+</div>
+
+<script>window.onload = function(){ window.print(); };<\/script>
+</body>
+</html>`;
+
+    const w = window.open('','_blank');
+    w.document.write(html);
+    w.document.close();
+  };
+
+  calculate();
+});
+</script>
 </body>
 </html>
