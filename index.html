@@ -46,6 +46,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);font-s
 .inp-auto{background:#f0faf3;border:1.5px solid rgba(63,185,80,.4);color:#166534;font-family:'JetBrains Mono',monospace;font-weight:700;pointer-events:none}
 .inp-price{background:#eef4ff;border:1.5px solid rgba(56,139,253,.35);color:#1a365d;font-family:'JetBrains Mono',monospace;font-weight:600}
 .inp-price::placeholder{color:#7ba3d4;font-weight:400}
+.inp-sel{background:var(--inp);border:1.5px solid var(--inp-b);color:#1a1208;font-weight:600;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' stroke='%231a1208' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px}
 .r2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
 .r3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 
@@ -103,8 +104,9 @@ tfoot td.lbl{font-family:'Inter',sans-serif;font-size:10px;letter-spacing:1px;te
 .cost-section{padding:16px 18px;border-top:1px solid var(--bdr)}
 .cost-tiles{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 
-.toggle-section{cursor:pointer;user-select:none}
-.toggle-section:hover .sec{color:var(--txt2)}
+.tape-badge{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700;letter-spacing:.5px;margin-left:4px}
+.tape-30{background:rgba(230,168,23,.15);color:#e6a817;border:1px solid rgba(230,168,23,.35)}
+.tape-60{background:rgba(56,139,253,.15);color:#388bfd;border:1px solid rgba(56,139,253,.35)}
 </style>
 </head>
 <body>
@@ -126,7 +128,7 @@ tfoot td.lbl{font-family:'Inter',sans-serif;font-size:10px;letter-spacing:1px;te
 <div class="statusbar">
   <div class="spill"><div class="spill-dot" style="background:var(--acc)"></div><span class="spill-lbl">Duct Glue</span><span class="spill-val" id="st-glue">0</span><span class="spill-unit">Ltr</span></div>
   <div class="spill"><div class="spill-dot" style="background:var(--blue)"></div><span class="spill-lbl">Profile Glue</span><span class="spill-val" id="st-pglue">0</span><span class="spill-unit">Tubes</span></div>
-  <div class="spill"><div class="spill-dot" style="background:var(--grn)"></div><span class="spill-lbl">Alu Tape</span><span class="spill-val" id="st-tape">0</span><span class="spill-unit">Rolls</span></div>
+  <div class="spill"><div class="spill-dot" style="background:var(--grn)"></div><span class="spill-lbl">Alu Tape</span><span class="spill-val" id="st-tape">0</span><span class="spill-unit" id="st-tape-unit">Rolls</span></div>
   <div class="spill"><div class="spill-dot" style="background:var(--red)"></div><span class="spill-lbl">Silicone</span><span class="spill-val" id="st-sil">0</span><span class="spill-unit">Tubes</span></div>
   <div class="spill"><div class="spill-dot" style="background:var(--ora)"></div><span class="spill-lbl">PVC Corner</span><span class="spill-val" id="st-pvc">0</span><span class="spill-unit">Pcs</span></div>
   <div class="spill"><div class="spill-dot" style="background:var(--pur)"></div><span class="spill-lbl">Sliding Ch.</span><span class="spill-val" id="st-sliding">0</span><span class="spill-unit">Pcs</span></div>
@@ -145,6 +147,10 @@ tfoot td.lbl{font-family:'Inter',sans-serif;font-size:10px;letter-spacing:1px;te
       <div class="r2">
         <div class="field"><label>Customer</label><input type="text" id="customer" class="inp-m" placeholder="e.g. IECO" value="IECO"></div>
         <div class="field"><label>Project No.</label><input type="text" id="project" class="inp-m" placeholder="e.g. AK-JD0050"></div>
+      </div>
+      <div class="r2">
+        <div class="field"><label>Project Name</label><input type="text" id="projName" class="inp-m" placeholder="e.g. Tower A HVAC"></div>
+        <div class="field"><label>Drawing Ref. No.</label><input type="text" id="drawingRef" class="inp-m" placeholder="e.g. DWG-HVAC-001"></div>
       </div>
       <div class="r2">
         <div class="field"><label>Date</label><input type="date" id="projDate" class="inp-m"></div>
@@ -169,9 +175,24 @@ tfoot td.lbl{font-family:'Inter',sans-serif;font-size:10px;letter-spacing:1px;te
         <div class="field"><label>Duct Glue (Ltr) — Tqty × 12/150</label><input type="text" id="out-glue" class="inp-auto" readonly value="0"></div>
         <div class="field"><label>Profile Glue (Tubes) — Tqty × 1/100</label><input type="text" id="out-pglue" class="inp-auto" readonly value="0"></div>
       </div>
+
+      <!-- Alu Tape with Yard selection -->
+      <div class="field">
+        <label>Alu Tape Roll Size</label>
+        <select id="tapeYard" class="inp-sel" onchange="calculate()">
+          <option value="30">30 Yard Roll — Standard</option>
+          <option value="60">60 Yard Roll — Double Length (Half Qty)</option>
+        </select>
+      </div>
       <div class="r2">
-        <div class="field"><label>Normal Alu Tape (Rolls) — Tqty × 24/250</label><input type="text" id="out-tape" class="inp-auto" readonly value="0"></div>
-        <div class="field"><label>Silicone (Tubes) — Tqty × 24/75</label><input type="text" id="out-sil" class="inp-auto" readonly value="0"></div>
+        <div class="field">
+          <label>Normal Alu Tape (Rolls) — <span id="tape-formula">Tqty × 24/250</span></label>
+          <input type="text" id="out-tape" class="inp-auto" readonly value="0">
+        </div>
+        <div class="field">
+          <label>Silicone (Tubes) — Tqty × 24/75</label>
+          <input type="text" id="out-sil" class="inp-auto" readonly value="0">
+        </div>
       </div>
 
       <div class="sec">Flanges — Manual Entry</div>
@@ -357,14 +378,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.calculate = function(){
     const tqty = n('tqty');
+    const tapeYard = parseInt(g('tapeYard').value) || 30;
 
-    /* Show warning if no area entered */
     g('errMsg').style.display = tqty <= 0 ? 'block' : 'none';
 
     /* ── AUTO QUANTITIES FROM AREA ── */
     const ductGlue    = tqty * (12/150);
     const profileGlue = tqty * (1/100);
-    const aluTape     = tqty * (24/250);
+
+    let aluTape, aluTapeFormula, aluTapeLabel;
+    if(tapeYard === 60){
+      aluTape = tqty * (24/500);
+      aluTapeFormula = 'Tqty × 24/500';
+      aluTapeLabel = 'Alu Tape 60Yd';
+    } else {
+      aluTape = tqty * (24/250);
+      aluTapeFormula = 'Tqty × 24/250';
+      aluTapeLabel = 'Alu Tape 30Yd';
+    }
+
     const silAuto     = tqty * (24/75);
     const silicone    = n('silOverride') > 0 ? n('silOverride') : silAuto;
 
@@ -389,6 +421,8 @@ document.addEventListener('DOMContentLoaded', () => {
     g('out-sliding').value = fmt(slidingCh, 3);
     g('out-pvc').value     = fmt(pvcCorner, 3);
 
+    g('tape-formula').textContent = aluTapeFormula;
+
     /* ── PRICES ── */
     const priceSheet       = n('priceSheet');
     const priceDuctGlue    = n('priceDuctGlue');
@@ -408,10 +442,22 @@ document.addEventListener('DOMContentLoaded', () => {
     g('st-glue').textContent    = fmt(ductGlue, 2);
     g('st-pglue').textContent   = fmt(profileGlue, 2);
     g('st-tape').textContent    = fmt(aluTape, 2);
+    g('st-tape-unit').textContent = tapeYard === 60 ? 'Rls (60Yd)' : 'Rolls';
     g('st-sil').textContent     = fmt(silicone, 2);
     g('st-pvc').textContent     = fmt(pvcCorner, 2);
     g('st-sliding').textContent = fmt(slidingCh, 2);
     g('st-sqm').textContent     = fmt(tqty, 2);
+
+    /* ── BUILD ROWS ── */
+    const rows = buildRows(tqty, ductGlue, profileGlue, aluTape, aluTapeFormula, aluTapeLabel, tapeYard, silicone, aluJT, aluH, aluU, aluF, pvcCorner, slidingCh, giCorner, reinfRod, reinfScrew, priceSheet, priceDuctGlue, priceProfileGlue, priceAluTape, priceFlange, priceSilicone, pricePvcCorner, priceSlidingCh, priceGiCorner, priceReinfRod, priceReinfScrew);
+
+    let totalCost = 0;
+    let pricedCount = 0;
+    rows.forEach(r => {
+      r.totalCost = (r.price > 0 && r.qty > 0) ? r.qty * r.price : 0;
+      totalCost += r.totalCost;
+      if(r.price > 0 && r.qty > 0) pricedCount++;
+    });
 
     /* ── KPIs ── */
     g('kpi-glue').textContent    = fmt(ductGlue, 2);
@@ -419,20 +465,13 @@ document.addEventListener('DOMContentLoaded', () => {
     g('kpi-sliding').textContent = fmt(slidingCh, 2);
 
     if(hasPrices){
-      /* Calculate total cost */
-      const rows = buildRows(tqty, ductGlue, profileGlue, aluTape, silicone, aluJT, aluH, aluU, aluF, pvcCorner, slidingCh, giCorner, reinfRod, reinfScrew, priceSheet, priceDuctGlue, priceProfileGlue, priceAluTape, priceFlange, priceSilicone, pricePvcCorner, priceSlidingCh, priceGiCorner, priceReinfRod, priceReinfScrew);
-      let totalCost = 0;
-      rows.forEach(r => { r.totalCost = (r.price > 0 && r.qty > 0) ? r.qty * r.price : 0; totalCost += r.totalCost; });
-
       g('kpi-cost-lbl').textContent = 'Total Cost';
       g('kpi-cost').textContent = fmt(totalCost, 0);
       g('kpi-cost').className = 'kpi-val cv-r';
       g('kpi-cost-unit').textContent = 'AED';
-
       g('costSummary').style.display = 'block';
       g('s-totalcost').textContent = fmt(totalCost, 2);
       g('s-costpsqm').textContent = tqty > 0 ? fmt(totalCost / tqty, 2) : '—';
-      const pricedCount = rows.filter(r => r.price > 0 && r.qty > 0).length;
       g('s-priced').textContent = pricedCount;
     } else {
       g('kpi-cost-lbl').textContent = 'Total Area';
@@ -443,18 +482,7 @@ document.addEventListener('DOMContentLoaded', () => {
       g('costSummary').style.display = 'none';
     }
 
-    /* ── BUILD TABLE ── */
-    const rows = buildRows(tqty, ductGlue, profileGlue, aluTape, silicone, aluJT, aluH, aluU, aluF, pvcCorner, slidingCh, giCorner, reinfRod, reinfScrew, priceSheet, priceDuctGlue, priceProfileGlue, priceAluTape, priceFlange, priceSilicone, pricePvcCorner, priceSlidingCh, priceGiCorner, priceReinfRod, priceReinfScrew);
-
-    let totalCost = 0;
-    let pricedCount = 0;
-    rows.forEach(r => {
-      r.totalCost = (r.price > 0 && r.qty > 0) ? r.qty * r.price : 0;
-      totalCost += r.totalCost;
-      if(r.price > 0 && r.qty > 0) pricedCount++;
-    });
-
-    /* Update thead based on hasPrices */
+    /* ── TABLE HEADER ── */
     if(hasPrices){
       g('matHead').innerHTML = `<tr>
         <th style="width:28px">#</th>
@@ -477,7 +505,7 @@ document.addEventListener('DOMContentLoaded', () => {
       </tr>`;
     }
 
-    /* Build tbody */
+    /* ── TABLE BODY ── */
     const hasAnyInput = tqty > 0 || aluJT > 0 || aluH > 0 || aluU > 0 || aluF > 0 || giCorner > 0 || reinfRod > 0 || reinfScrew > 0;
 
     if(!hasAnyInput){
@@ -493,9 +521,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const priceDisplay = r.price > 0 ? fmt(r.price, 2) : '—';
       const costDisplay = r.totalCost > 0 ? fmt(r.totalCost, 2) : '—';
 
+      let matDisplay = r.mat;
+      if(r.tapeBadge){
+        const badgeClass = tapeYard === 60 ? 'tape-60' : 'tape-30';
+        matDisplay += ` <span class="tape-badge ${badgeClass}">${tapeYard} Yd</span>`;
+      }
+
       let cells = `<td class="nc" style="color:var(--txt3)">${r.sl}</td>
         <td><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:600;background:${col}22;color:${col};border:1px solid ${col}44">${r.cat}</span></td>
-        <td class="left">${r.mat}</td>
+        <td class="left">${matDisplay}</td>
         <td style="color:var(--txt3)">${r.unit}</td>
         <td style="font-size:10px;color:${isAuto?'#3fb950':'var(--txt3)'};">${r.formula}</td>
         <td class="${isAuto?'nch':'nc'}">${qtyDisplay}</td>`;
@@ -508,7 +542,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return `<tr>${cells}</tr>`;
     }).join('');
 
-    /* tfoot */
+    /* ── TABLE FOOT ── */
     if(hasPrices && totalCost > 0){
       g('matFoot').style.display = '';
       g('matFoot').innerHTML = `<tr>
@@ -523,7 +557,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* Store for PDF */
     window._data = {
-      rows, tqty, ductGlue, profileGlue, aluTape, silicone,
+      rows, tqty, ductGlue, profileGlue, aluTape, aluTapeFormula, aluTapeLabel, tapeYard, silicone,
       aluJT, aluH, aluU, aluF, giCorner, reinfRod, reinfScrew,
       pvcCorner, slidingCh,
       hasPrices, totalCost, pricedCount,
@@ -531,16 +565,17 @@ document.addEventListener('DOMContentLoaded', () => {
       priceFlange, priceSilicone, pricePvcCorner, priceSlidingCh,
       priceGiCorner, priceReinfRod, priceReinfScrew,
       customer: g('customer').value, project: g('project').value,
+      projName: g('projName').value, drawingRef: g('drawingRef').value,
       date: g('projDate').value, prepBy: g('prepBy').value
     };
   };
 
-  function buildRows(tqty, ductGlue, profileGlue, aluTape, silicone, aluJT, aluH, aluU, aluF, pvcCorner, slidingCh, giCorner, reinfRod, reinfScrew, priceSheet, priceDuctGlue, priceProfileGlue, priceAluTape, priceFlange, priceSilicone, pricePvcCorner, priceSlidingCh, priceGiCorner, priceReinfRod, priceReinfScrew){
+  function buildRows(tqty, ductGlue, profileGlue, aluTape, aluTapeFormula, aluTapeLabel, tapeYard, silicone, aluJT, aluH, aluU, aluF, pvcCorner, slidingCh, giCorner, reinfRod, reinfScrew, priceSheet, priceDuctGlue, priceProfileGlue, priceAluTape, priceFlange, priceSilicone, pricePvcCorner, priceSlidingCh, priceGiCorner, priceReinfRod, priceReinfScrew){
     return [
       { sl:1,  cat:'Panel',    mat:'PH Sheet',              unit:'Sqm',  formula:'Manual',           qty: tqty,        price: priceSheet       },
       { sl:2,  cat:'Adhesive', mat:'Duct Glue',             unit:'Ltr',  formula:'Tqty × 12/150',    qty: ductGlue,    price: priceDuctGlue    },
       { sl:3,  cat:'Adhesive', mat:'Profile Glue',          unit:'Tube', formula:'Tqty × 1/100',     qty: profileGlue, price: priceProfileGlue },
-      { sl:4,  cat:'Taping',   mat:'Normal Alu Tape',       unit:'Roll', formula:'Tqty × 24/250',    qty: aluTape,     price: priceAluTape     },
+      { sl:4,  cat:'Taping',   mat: aluTapeLabel,           unit:'Roll', formula: aluTapeFormula,    qty: aluTape,     price: priceAluTape, tapeBadge: true },
       { sl:5,  cat:'Flange',   mat:'Alu JT',                unit:'Mtr',  formula:'Manual',           qty: aluJT,       price: priceFlange      },
       { sl:6,  cat:'Flange',   mat:'Alu H',                 unit:'Mtr',  formula:'Manual',           qty: aluH,        price: priceFlange      },
       { sl:7,  cat:'Flange',   mat:'Alu U',                 unit:'Mtr',  formula:'Manual',           qty: aluU,        price: priceFlange      },
@@ -558,10 +593,14 @@ document.addEventListener('DOMContentLoaded', () => {
   window.clearForm = function(){
     ['tqty','aluJT','aluH','aluU','aluF','giCorner','silOverride','reinfRod','reinfScrew']
       .forEach(id => { g(id).value = ''; });
+    ['projName','drawingRef']
+      .forEach(id => { g(id).value = ''; });
     ['out-glue','out-pglue','out-tape','out-sil','out-sliding','out-pvc']
       .forEach(id => { g(id).value = '0'; });
     ['priceSheet','priceDuctGlue','priceProfileGlue','priceAluTape','priceFlange','priceSilicone','pricePvcCorner','priceSlidingCh','priceGiCorner','priceReinfRod','priceReinfScrew']
       .forEach(id => { g(id).value = ''; });
+    g('tapeYard').value = '30';
+    g('tape-formula').textContent = 'Tqty × 24/250';
     g('matBody').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--txt3);font-size:12px">Enter Total Area and click Calculate</td></tr>';
     g('matFoot').style.display = 'none';
     g('errMsg').style.display = 'none';
@@ -574,7 +613,7 @@ document.addEventListener('DOMContentLoaded', () => {
     g('kpi-cost-unit').textContent = 'm²';
     ['st-glue','st-pglue','st-tape','st-sil','st-pvc','st-sliding','st-sqm']
       .forEach(id => { g(id).textContent = '0'; });
-    /* Reset thead */
+    g('st-tape-unit').textContent = 'Rolls';
     g('matHead').innerHTML = `<tr>
       <th style="width:32px">#</th>
       <th style="width:72px">Category</th>
@@ -594,15 +633,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const genDate = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
     const genTime = new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
 
-    /* Build table rows for PDF */
-    const pdfRows = d.rows.map((r,i) => {
+    const tableRows = d.rows.map((r,i) => {
       const bg = i%2===0 ? '#ffffff' : '#f5f5f5';
       const isAuto = r.formula !== 'Manual';
       const qtyDisplay = r.qty > 0 ? parseFloat(r.qty).toFixed(r.unit==='Pcs'?0:3) : '—';
 
+      let matHtml = `<b>${r.mat}</b>`;
+      if(r.tapeBadge){
+        const badgeColor = d.tapeYard === 60 ? '#388bfd' : '#e6a817';
+        const badgeBg    = d.tapeYard === 60 ? 'rgba(56,139,253,.12)' : 'rgba(230,168,23,.12)';
+        matHtml += ` <span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:7pt;font-weight:700;color:${badgeColor};background:${badgeBg};border:1px solid ${badgeColor}44;letter-spacing:.3px">${d.tapeYard} Yd</span>`;
+      }
+
       let cells = `<td style="text-align:center;color:#666;width:28px">${r.sl}</td>
         <td style="text-align:center;width:68px">${r.cat}</td>
-        <td style="text-align:left;font-weight:600;color:#000"><b>${r.mat}</b></td>
+        <td style="text-align:left;color:#000">${matHtml}</td>
         <td style="text-align:center;width:38px">${r.unit}</td>
         <td style="text-align:center;width:100px;font-size:7.5pt;color:${isAuto?'#14532d':'#555'}">${r.formula}</td>
         <td style="text-align:right;font-weight:700;color:#000;width:70px">${qtyDisplay}</td>`;
@@ -617,7 +662,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return `<tr style="background:${bg}">${cells}</tr>`;
     }).join('');
 
-    /* Build thead */
     let pdfThead = `<tr>
       <th style="width:28px">#</th>
       <th style="width:68px">Category</th>
@@ -631,17 +675,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     pdfThead += `</tr>`;
 
-    /* Build tfoot */
     let pdfTfoot = '';
     if(d.hasPrices && d.totalCost > 0){
-      const cols = d.hasPrices ? 8 : 6;
+      const cols = 8;
       pdfTfoot = `<tr style="background:#e0e0e0!important">
         <td colspan="${cols-1}" style="text-align:right;font-weight:700;font-size:10pt;border-top:2px solid #000;padding:8px 10px">GRAND TOTAL</td>
         <td style="text-align:right;font-weight:900;font-size:11pt;border-top:2px solid #000;padding:8px 10px;color:#000">AED ${parseFloat(d.totalCost).toFixed(2)}</td>
       </tr>`;
     }
 
-    /* Cost summary section for PDF (only if prices) */
     let pdfCostSection = '';
     if(d.hasPrices && d.totalCost > 0){
       const costPerSqm = d.tqty > 0 ? (d.totalCost / d.tqty).toFixed(2) : '—';
@@ -657,11 +699,14 @@ document.addEventListener('DOMContentLoaded', () => {
       </table>`;
     }
 
-    /* Formula note */
-    let formulaNote = `<b>Auto-Calculated Formulas:</b><br>
+    const tapeNotePart = d.tapeYard === 60
+      ? 'Alu Tape (60 Yd) = Tqty &times; (24 &divide; 500) <span style="color:#388bfd;font-weight:700">— 60 Yard Roll, half quantity</span>'
+      : 'Alu Tape (30 Yd) = Tqty &times; (24 &divide; 250) <span style="color:#e6a817;font-weight:700">— 30 Yard Roll, standard</span>';
+
+    const formulaNote = `<b>Auto-Calculated Formulas:</b><br>
       Duct Glue = Tqty &times; (12 &divide; 150) &emsp;&bull;&emsp;
       Profile Glue = Tqty &times; (1 &divide; 100) &emsp;&bull;&emsp;
-      Normal Alu Tape = Tqty &times; (24 &divide; 250) &emsp;&bull;&emsp;
+      ${tapeNotePart} &emsp;&bull;&emsp;
       Silicone = Tqty &times; (24 &divide; 75)<br>
       <b>Derived from Manual Inputs:</b><br>
       PVC Corner = GI Corner &divide; 2 &emsp;&bull;&emsp;
@@ -743,11 +788,16 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
     <table class="meta-table">
       <tr>
-        <td><div class="meta-lbl">Customer</div><div class="meta-val">${d.customer||'—'}</div></td>
-        <td><div class="meta-lbl">Project No.</div><div class="meta-val">${d.project||'—'}</div></td>
-        <td><div class="meta-lbl">Date</div><div class="meta-val">${d.date||genDate}</div></td>
+        <td style="width:20%"><div class="meta-lbl">Customer</div><div class="meta-val">${d.customer||'—'}</div></td>
+        <td style="width:16%"><div class="meta-lbl">Project No.</div><div class="meta-val">${d.project||'—'}</div></td>
+        <td style="width:28%"><div class="meta-lbl">Project Name</div><div class="meta-val">${d.projName||'—'}</div></td>
+        <td style="width:18%"><div class="meta-lbl">Drawing Ref.</div><div class="meta-val">${d.drawingRef||'—'}</div></td>
+        <td style="width:18%"><div class="meta-lbl">Date</div><div class="meta-val">${d.date||genDate}</div></td>
+      </tr>
+      <tr>
         <td><div class="meta-lbl">Total Area (Tqty)</div><div class="meta-val">${parseFloat(d.tqty).toFixed(2)} m²</div></td>
-        <td><div class="meta-lbl">Prepared By</div><div class="meta-val">${d.prepBy||'—'}</div></td>
+        <td colspan="2"><div class="meta-lbl">Prepared By</div><div class="meta-val">${d.prepBy||'—'}</div></td>
+        <td colspan="2"></td>
       </tr>
     </table>
   </div>
@@ -755,7 +805,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <div class="sec-head"><span class="sec-num">1</span>Material Requirement</div>
   <table class="mat-table">
     <thead>${pdfThead}</thead>
-    <tbody>${pdfRows}</tbody>
+    <tbody>${tableRows}</tbody>
     ${pdfTfoot ? '<tfoot>'+pdfTfoot+'</tfoot>' : ''}
   </table>
   <div class="formula-note">${formulaNote}</div>
@@ -784,7 +834,7 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 </div>
 <div class="doc-footer">
-  <span>Made with <span class="footer-brand">Prodify</span> &mdash; Production Simplified &nbsp;|&nbsp; ${d.customer||''} &nbsp;/&nbsp; ${d.project||''}</span>
+  <span>Made with <span class="footer-brand">Prodify</span> &mdash; Production Simplified &nbsp;|&nbsp; ${d.customer||''} &nbsp;/&nbsp; ${d.project||''} ${d.projName ? '/ '+d.projName : ''}</span>
   <span>Generated: ${genDate} ${genTime} &nbsp;|&nbsp; Page 1 of 1</span>
 </div>
 <script>window.onload = function(){ window.print(); };<\/script>
